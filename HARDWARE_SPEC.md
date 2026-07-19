@@ -67,14 +67,17 @@ Each tag holds an NDEF message. NDEF is just the standard format NFC tags use to
 ### Record 1 — URI record (REQUIRED)
 
 ```
-https://lifescan.app/s/<id>#0|1|<name>|<blood>|<allergies>|<flags>|<contact>
+https://life-scan-web.vercel.app/s/<id>#0|1|<name>|<blood>|<allergies>|<flags>|<contact>
 ```
 
-Real example (this is your test payload — use it today):
+**✅ LIVE TEST PAYLOAD — the app is deployed, use this exact string today:**
 
 ```
-https://lifescan.app/s/demo01#0|1|Ramesh%20Kumar|O+|Penicillin,Sulfa|PACEMAKER|+919876543210
+https://life-scan-web.vercel.app/s/demo01#0|1|Ramesh%20Kumar|O+|Penicillin,Sulfa|PACEMAKER|+919876543210
 ```
+
+Open that URL in a browser right now to see what a successful tap should
+produce. The card data is everything after the `#`.
 
 Field meanings (you don't need to generate these — software supplies the final string — but understanding them helps you debug):
 
@@ -151,14 +154,19 @@ Design rules:
 
 **This is the one task that can hurt the project if left late.** The opening 15 seconds of our demo is: phone in airplane mode → tap card → medical data appears. That depends on Android opening a locally-cached web app from an NFC tap while offline, and that behaviour varies by phone and Android version.
 
-You can test the *mechanism* right now with any offline-capable page — you do not need our finished app.
+**✅ UNBLOCKED — the app is live, you can run this test now.**
 
-1. Ask the software team for a **test PWA URL** (they can put a trivial one up in 15 minutes — tell them it's blocking Task 4).
-2. On the test phone, open it in Chrome → menu → **Install app** / **Add to Home screen**.
-3. Open the installed app once so it caches.
-4. **Turn on airplane mode.**
+1. On the test phone, open **https://life-scan-web.vercel.app** in Chrome.
+2. Menu → **Install app** / **Add to Home screen**.
+3. **Open the installed app once, while online**, and tap "Open a demo card".
+   This is what primes the offline cache — skipping it makes the test fail
+   for reasons that have nothing to do with your tag.
+4. **Turn on airplane mode.** Confirm the airplane icon is showing.
 5. Tap the NFC card.
-6. **Does the app open and show content?**
+6. **Does the app open and show the medical data?**
+
+The status pill at the top right should read **"Offline · working"** in green.
+That is the app telling you it knows it has no network and does not care.
 
 | Result | What to do |
 |---|---|
@@ -207,10 +215,19 @@ Software hands you the real URL(s). Rewrite all 20 tags with NFC Tools. Verify e
 
 ## 6. Questions to send back to the software team
 
-- What is the test PWA URL for Task 4? (**blocking — needed by 20 July**)
-- Final production URL for Task 6? (needed 23 July)
+- ~~What is the test PWA URL for Task 4?~~ **Answered:** `https://life-scan-web.vercel.app` — live now, nothing blocking you.
+- Final per-patient URLs for Task 6? (needed 23 July — the domain will not change, only the `/s/<id>` and the fragment)
 - Do you want Record 2 (encrypted blob) on the tag, and if so what hex string? (optional — confirm whether to skip)
 - Should the printed card show a real person's name or an obvious demo persona?
+
+### Report back after Task 4
+
+This is the one result the software side is waiting on. Send:
+
+- Phone model + Android version
+- Did the app install to the home screen? (yes / no)
+- Did the airplane-mode tap show medical data? (yes / no)
+- If no — what appeared instead? (browser error page / nothing / blank app)
 
 ---
 
