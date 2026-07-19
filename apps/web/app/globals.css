@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+/* Palette lifted from the pitch deck so the app and slides read as one system. */
+@theme {
+  --color-ink-950: #080d18;
+  --color-ink-900: #0d1424;
+  --color-ink-800: #141d33;
+  --color-ink-700: #1e2a45;
+  --color-ink-600: #2b3a5c;
+
+  --color-critical: #ff4d5e;
+  --color-caution: #fbbf24;
+  --color-vital: #2dd4a7;
+  --color-info: #38bdf8;
+  --color-implant: #a78bfa;
+}
+
+html,
+body {
+  background-color: var(--color-ink-950);
+  color: #e8edf7;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Emergency data must stay legible when a phone is in a bloodied glove or
+     bright sunlight — never let the OS shrink our text. */
+  text-size-adjust: 100%;
+}
+
+/* Respect users who ask for reduced motion; the scan page animates on entry. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
