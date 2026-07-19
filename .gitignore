@@ -1,0 +1,26 @@
+node_modules/
+.next/
+out/
+dist/
+build/
+
+# Secrets — never commit
+.env
+.env.local
+.env*.local
+
+# Hardhat
+artifacts/
+cache/
+typechain-types/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*

@@ -1,0 +1,15 @@
+{
+  "name": "lifescan",
+  "private": true,
+  "version": "0.1.0",
+  "description": "LifeScan AI — emergency medical identity with offline-first access and on-chain accountability",
+  "scripts": {
+    "dev": "pnpm --filter @lifescan/web dev",
+    "build": "pnpm --filter @lifescan/web build",
+    "test": "pnpm -r test"
+  },
+  "packageManager": "pnpm@10.12.4",
+  "engines": {
+    "node": ">=22"
+  }
+}
