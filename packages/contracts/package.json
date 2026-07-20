@@ -1,0 +1,16 @@
+{
+  "name": "@lifescan/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:baseSepolia": "hardhat run scripts/deploy.ts --network baseSepolia",
+    "verify:baseSepolia": "hardhat run scripts/verify.ts --network baseSepolia"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox-viem": "^3.0.0",
+    "hardhat": "^2.22.19",
+    "dotenv": "^16.4.7"
+  }
+}
