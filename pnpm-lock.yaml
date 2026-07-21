@@ -53,6 +53,18 @@ importers:
 
   packages/crypto: {}
 
+  services/guardian:
+    dependencies:
+      '@lifescan/crypto':
+        specifier: workspace:*
+        version: link:../../packages/crypto
+      dotenv:
+        specifier: ^16.4.7
+        version: 16.6.1
+      viem:
+        specifier: ^2.21.55
+        version: 2.55.4(typescript@5.7.3)
+
 packages:
 
   '@adraffy/ens-normalize@1.11.1':

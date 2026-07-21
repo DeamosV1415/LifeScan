@@ -1,0 +1,17 @@
+{
+  "name": "@lifescan/guardian",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --experimental-strip-types --watch src/index.ts",
+    "start": "node --experimental-strip-types src/index.ts",
+    "start:all": "node --experimental-strip-types src/cluster.ts",
+    "test": "node --test --experimental-strip-types test/*.test.ts"
+  },
+  "dependencies": {
+    "@lifescan/crypto": "workspace:*",
+    "dotenv": "^16.4.7",
+    "viem": "^2.21.55"
+  }
+}
