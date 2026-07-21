@@ -45,20 +45,14 @@ const config: HardhatUserConfig = {
     },
   },
   etherscan: {
-    // Etherscan's unified multichain API covers Base, so one key serves all.
-    apiKey: {
-      baseSepolia: process.env.BASESCAN_API_KEY ?? "",
-    },
-    customChains: [
-      {
-        network: "baseSepolia",
-        chainId: 84532,
-        urls: {
-          apiURL: "https://api-sepolia.basescan.org/api",
-          browserURL: "https://sepolia.basescan.org",
-        },
-      },
-    ],
+    // Etherscan V2 is a single multichain endpoint keyed by chain ID, so one
+    // key covers Base and there is no per-network map or customChains entry.
+    // The old per-network form still typechecks but fails at verify time with
+    // "You are using a deprecated V1 endpoint".
+    apiKey: process.env.BASESCAN_API_KEY ?? "",
+  },
+  sourcify: {
+    enabled: false,
   },
 };
 
