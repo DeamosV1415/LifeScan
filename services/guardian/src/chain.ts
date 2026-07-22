@@ -47,18 +47,35 @@ export function createChainReader({ rpcUrl, accessLogAddress }: ChainConfig) {
     transport: http(rpcUrl),
   });
 
+  const readGrant = (patientHash: `0x${string}`, provider: `0x${string}`) =>
+    client.readContract({
+      address: accessLogAddress,
+      abi: ACCESS_LOG_ABI,
+      functionName: "hasRecentGrant",
+      args: [patientHash, provider, GRANT_WINDOW_SECONDS],
+    });
+
   return {
-    /** The single on-chain question a Guardian asks before releasing a share. */
+    /**
+     * The single on-chain question a Guardian asks before releasing a share.
+     *
+     * Base's public RPC is load-balanced, so a read issued moments after the
+     * break-glass transaction confirms can land on a node that has not yet seen
+     * that block and wrongly report no grant. We retry a false result a few
+     * times to absorb that propagation lag. This only costs latency: a record
+     * that is genuinely frozen or has no grant still returns false after the
+     * retries, so the patient's revoke stays enforced.
+     */
     async isReleasePermitted(
       patientHash: `0x${string}`,
       provider: `0x${string}`,
     ): Promise<boolean> {
-      return client.readContract({
-        address: accessLogAddress,
-        abi: ACCESS_LOG_ABI,
-        functionName: "hasRecentGrant",
-        args: [patientHash, provider, GRANT_WINDOW_SECONDS],
-      });
+      const attempts = 3;
+      for (let i = 0; i < attempts; i++) {
+        if (await readGrant(patientHash, provider)) return true;
+        if (i < attempts - 1) await new Promise((r) => setTimeout(r, 1000));
+      }
+      return false;
     },
 
     async isFrozen(patientHash: `0x${string}`): Promise<boolean> {

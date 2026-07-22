@@ -17,7 +17,9 @@ dotenv.config({ path: path.resolve(import.meta.dirname, "../../../.env.local") }
  */
 
 const id = process.env.GUARDIAN_ID ?? "1";
-const port = Number(process.env.PORT ?? 4000 + Number(id));
+// An empty PORT (e.g. inherited as "") must fall through to the per-id default,
+// so guard on truthiness rather than nullishness.
+const port = Number(process.env.PORT || 4000 + Number(id));
 
 const accessLogAddress = process.env.NEXT_PUBLIC_ACCESS_LOG_ADDRESS;
 if (!accessLogAddress) {

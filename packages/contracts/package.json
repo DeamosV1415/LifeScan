@@ -6,7 +6,7 @@
     "compile": "hardhat compile",
     "test": "hardhat test",
     "deploy:baseSepolia": "hardhat run scripts/deploy.ts --network baseSepolia",
-    "verify:baseSepolia": "hardhat run scripts/verify.ts --network baseSepolia"
+    "wire:baseSepolia": "hardhat run scripts/wire.ts --network baseSepolia"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox-viem": "^3.0.0",

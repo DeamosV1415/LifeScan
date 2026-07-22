@@ -9,9 +9,12 @@
     "test": "node --test --experimental-strip-types test/*.test.ts"
   },
   "dependencies": {
+    "@lifescan/crypto": "workspace:*",
+    "@privy-io/react-auth": "^3.35.1",
     "next": "16.2.10",
     "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "react-dom": "19.2.0",
+    "viem": "^2.55.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.3",

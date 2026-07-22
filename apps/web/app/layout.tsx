@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ServiceWorkerRegistrar } from "./sw-registrar";
+import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   title: "LifeScan — Emergency Medical ID",
@@ -29,7 +30,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <ServiceWorkerRegistrar />
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
