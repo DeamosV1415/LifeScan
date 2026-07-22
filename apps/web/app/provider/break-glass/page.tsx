@@ -58,6 +58,21 @@ function BreakGlassInner() {
     try {
       const contextHash = note.trim() ? keccak256(toHex(note.trim())) : zeroHash;
 
+      // Hand the paramedic's free-text context to the agent off-chain (the
+      // chain carries only its hash). Best-effort — the agent falls back to the
+      // reason code if this does not arrive, so a failure here never blocks
+      // break-glass itself.
+      if (note.trim()) {
+        const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL;
+        if (agentUrl) {
+          fetch(`${agentUrl}/context`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ patientHash, context: note.trim() }),
+          }).catch(() => {});
+        }
+      }
+
       // 1. The on-chain grant. This is the attributable, immutable record.
       log({ text: "Signing break-glass on Base Sepolia…", tone: "info" });
       const wallet = await getWalletClient();
