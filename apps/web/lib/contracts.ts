@@ -46,6 +46,19 @@ export const REASON_CODES = {
 
 export type ReasonCode = (typeof REASON_CODES)[keyof typeof REASON_CODES];
 
+/** Human-readable labels for the audit view, keyed by the on-chain reason code. */
+export const REASON_LABELS: Record<number, string> = {
+  1: "Unconscious patient",
+  2: "Trauma / RTA",
+  3: "Cardiac event",
+  4: "Suspected overdose",
+  99: "Other emergency",
+};
+
+export function reasonLabel(code: number): string {
+  return REASON_LABELS[code] ?? `Reason ${code}`;
+}
+
 /**
  * The one and only thing that identifies a patient on-chain: a hash, never a
  * name or an ID in the clear. Both apps derive it the same way so a card sealed
@@ -100,9 +113,29 @@ export const ACCESS_LOG_ABI = [
   },
   {
     type: "function",
+    name: "blockProvider",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "patientHash", type: "bytes32" },
+      { name: "provider", type: "address" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
     name: "isFrozen",
     stateMutability: "view",
     inputs: [{ name: "patientHash", type: "bytes32" }],
+    outputs: [{ type: "bool" }],
+  },
+  {
+    type: "function",
+    name: "isBlocked",
+    stateMutability: "view",
+    inputs: [
+      { name: "patientHash", type: "bytes32" },
+      { name: "provider", type: "address" },
+    ],
     outputs: [{ type: "bool" }],
   },
   {

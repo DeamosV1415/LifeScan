@@ -5,6 +5,7 @@ import OpenAI from "openai";
 import { createAgentChain, type BreakGlassEvent } from "./chain.ts";
 import { collectAndDecrypt } from "./collect.ts";
 import { runTriage } from "./reason.ts";
+import { createSmsSender } from "./twilio.ts";
 import { trace } from "./trace.ts";
 
 // Load repo-root .env.local.
@@ -33,6 +34,8 @@ const chain = createAgentChain({
 });
 
 const client = new OpenAI({ apiKey: required("OPENAI_API_KEY") });
+
+const sms = createSmsSender();
 
 // Paramedic free-text context, delivered off-chain by the provider app; the
 // on-chain contextHash lets anyone verify it was not altered.
@@ -88,6 +91,7 @@ async function handleBreakGlass(event: BreakGlassEvent) {
       patientHash: event.patientHash,
       record,
       paramedicContext,
+      sms,
     });
   } catch (error) {
     trace.emitTrace({
@@ -169,6 +173,7 @@ async function main() {
   const authorized = await chain.isAuthorized();
   console.log(`[agent] address ${chain.agentAddress}`);
   console.log(`[agent] model ${MODEL} · effort ${EFFORT}`);
+  console.log(`[agent] SMS: ${sms.configured ? "Twilio configured" : "not configured (notifications anchor on-chain only)"}`);
   console.log(`[agent] on-chain authorized: ${authorized}`);
   if (!authorized) {
     console.warn("[agent] NOT authorized on-chain — guardians will refuse. Run setup-agent.");

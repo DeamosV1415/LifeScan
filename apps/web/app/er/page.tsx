@@ -35,6 +35,12 @@ interface Sbar {
   recommendation: string;
 }
 
+interface PreAuth {
+  provisionalDiagnosis: string;
+  estimatedAmountInr: number;
+  itemization: string[];
+}
+
 const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL ?? "http://localhost:4100";
 
 const KIND_STYLE: Record<TraceEvent["kind"], string> = {
@@ -76,6 +82,10 @@ export default function ErDashboard() {
     [events],
   );
   const sbar = useMemo(() => lastToolData<Sbar>(events, "SBAR handoff generated"), [events]);
+  const preauth = useMemo(
+    () => lastToolData<PreAuth>(events, "Insurance pre-auth packet prepared"),
+    [events],
+  );
   const active = events.some((e) => e.kind === "trigger") && !events.some((e) => e.kind === "done");
 
   return (
@@ -150,6 +160,36 @@ export default function ErDashboard() {
                 <SbarLine k="A" label="Assessment" v={sbar.assessment} />
                 <SbarLine k="R" label="Recommendation" v={sbar.recommendation} />
               </dl>
+            </div>
+          )}
+
+          {preauth && (
+            <div className="mt-5 border-t border-ink-800 pt-4">
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-semibold tracking-widest text-info uppercase">
+                  Insurance pre-auth · prepared
+                </p>
+                <span className="rounded-full bg-info/15 px-2.5 py-0.5 text-[10px] font-semibold text-info">
+                  awaiting human release
+                </span>
+              </div>
+              <div className="mt-2 flex items-baseline justify-between">
+                <p className="text-sm text-white">{preauth.provisionalDiagnosis}</p>
+                <p className="text-lg font-bold text-white">
+                  ₹{preauth.estimatedAmountInr.toLocaleString("en-IN")}
+                </p>
+              </div>
+              {preauth.itemization.length > 0 && (
+                <ul className="mt-2 space-y-0.5 text-xs text-ink-600">
+                  {preauth.itemization.map((it, i) => (
+                    <li key={i}>· {it}</li>
+                  ))}
+                </ul>
+              )}
+              <p className="mt-2 text-[11px] text-ink-600">
+                The agent prepared and anchored this packet. Funds are released by
+                a human admin — never the agent.
+              </p>
             </div>
           )}
         </section>

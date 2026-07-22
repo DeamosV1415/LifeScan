@@ -175,6 +175,16 @@ export default function PatientPage() {
           </a>
         </div>
       )}
+
+      <a
+        href="/patient/audit"
+        className="mt-6 block rounded-xl border border-ink-800 bg-ink-900 px-5 py-4 transition hover:border-ink-700"
+      >
+        <span className="block text-sm font-bold text-white">Your access log →</span>
+        <span className="mt-0.5 block text-xs text-ink-600">
+          See who broke glass, freeze the record, or revoke a provider.
+        </span>
+      </a>
     </Shell>
   );
 }

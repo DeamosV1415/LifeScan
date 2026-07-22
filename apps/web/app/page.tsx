@@ -79,6 +79,26 @@ export default function Home() {
         </ul>
       </div>
 
+      <div className="mt-10 border-t border-ink-800 pt-6">
+        <p className="text-[10px] font-semibold tracking-[0.2em] text-ink-600 uppercase">
+          Demo consoles
+        </p>
+        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+          <Link href="/patient" className="rounded-lg border border-ink-800 px-3 py-2 text-white transition hover:border-ink-700">
+            Patient · issue card
+          </Link>
+          <Link href="/patient/audit" className="rounded-lg border border-ink-800 px-3 py-2 text-white transition hover:border-ink-700">
+            Patient · access log
+          </Link>
+          <Link href="/provider/break-glass" className="rounded-lg border border-ink-800 px-3 py-2 text-white transition hover:border-ink-700">
+            Provider · break glass
+          </Link>
+          <Link href="/er" className="rounded-lg border border-ink-800 px-3 py-2 text-white transition hover:border-ink-700">
+            ER · incoming board
+          </Link>
+        </div>
+      </div>
+
       <p className="mt-10 text-center text-[11px] text-ink-600">
         Team LifeScan AI · Madhav Institute of Technology &amp; Science, Gwalior
       </p>

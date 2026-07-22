@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { ACTION, type AgentChain } from "./chain.ts";
 import { priceUsage, formatCost, type CostBreakdown } from "./cost.ts";
 import { trace } from "./trace.ts";
+import type { SmsSender } from "./twilio.ts";
 
 /**
  * The reasoning loop: OpenAI decides which tools to call; each tool both takes
@@ -165,8 +166,9 @@ export async function runTriage(params: {
   patientHash: `0x${string}`;
   record: unknown;
   paramedicContext: string;
+  sms?: SmsSender;
 }): Promise<ReasonResult> {
-  const { client, model, effort, chain, patientHash, record, paramedicContext } = params;
+  const { client, model, effort, chain, patientHash, record, paramedicContext, sms } = params;
 
   const emit = (kind: Parameters<typeof trace.emitTrace>[0]["kind"], text: string, extra?: object) =>
     trace.emitTrace({ patientHash, kind, text, ...extra });
@@ -186,7 +188,24 @@ export async function runTriage(params: {
     actions.push({ tool: name, args, txHash });
     emit("chain", `${HUMAN_LABEL[name]} anchored on-chain`, { href: chain.explorerTx(txHash) });
 
-    return JSON.stringify({ ok: true, anchored: txHash });
+    // Real-world side effect: the notify tool actually sends the SMS. The
+    // on-chain anchor above proves the notification was issued; this delivers
+    // it. A missing/failed Twilio credential never fails the run.
+    let deliveredTo: string | undefined;
+    if (name === "notify_emergency_contacts" && sms) {
+      const c = args as { name?: string; phone?: string; message?: string };
+      const result = await sms.send(c.phone ?? "", c.message ?? "LifeScan emergency alert.");
+      deliveredTo = result.to;
+      if (result.sent) {
+        emit("tool", `SMS delivered to ${c.name ?? "contact"} (${result.to})`);
+      } else if (!result.configured) {
+        emit("tool", `SMS not sent (Twilio not configured) — would notify ${result.to}`);
+      } else {
+        emit("error", `SMS to ${result.to} failed: ${result.error ?? "unknown error"}`);
+      }
+    }
+
+    return JSON.stringify({ ok: true, anchored: txHash, ...(deliveredTo ? { smsTo: deliveredTo } : {}) });
   }
 
   emit("reason", "Reasoning over the record and paramedic context…");
