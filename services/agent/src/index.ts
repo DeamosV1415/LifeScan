@@ -129,6 +129,12 @@ const server = http.createServer(async (req, res) => {
     });
     const patient = url.searchParams.get("patient") ?? undefined;
 
+    // Flush a comment immediately so the browser's EventSource fires `onopen`
+    // (Node buffers the headers until the first byte otherwise), then a
+    // heartbeat to keep the stream alive through any proxy.
+    res.write(": connected\n\n");
+    const heartbeat = setInterval(() => res.write(": ping\n\n"), 15000);
+
     for (const e of trace.backlog(patient)) res.write(`data: ${JSON.stringify(e)}\n\n`);
 
     const onTrace = (e: { patientHash: string }) => {
@@ -137,7 +143,10 @@ const server = http.createServer(async (req, res) => {
       }
     };
     trace.on("trace", onTrace);
-    req.on("close", () => trace.off("trace", onTrace));
+    req.on("close", () => {
+      clearInterval(heartbeat);
+      trace.off("trace", onTrace);
+    });
     return;
   }
 
