@@ -165,6 +165,51 @@ export function createGuardianServer({ id, chain, shares, nonces }: GuardianDeps
         return send(res, 200, { guardian: id, released: true, share });
       }
 
+      if (req.method === "POST" && url.pathname === "/release-agent") {
+        const body = await readJson(req);
+        const patientHash = String(body.patientHash ?? "");
+        const agent = String(body.agent ?? "");
+        const nonce = String(body.nonce ?? "");
+        const signature = String(body.signature ?? "");
+
+        if (!HEX32.test(patientHash) || !ADDRESS.test(agent)) {
+          return send(res, 400, { error: "malformed patientHash or agent" });
+        }
+        if (!nonces.consume(nonce)) {
+          return send(res, 401, { guardian: id, released: false, reason: "unknown or used challenge" });
+        }
+
+        const signatureValid = await verifyProviderSignature({
+          provider: agent as `0x${string}`,
+          patientHash,
+          nonce,
+          signature: signature as `0x${string}`,
+        });
+        if (!signatureValid) {
+          return send(res, 401, { guardian: id, released: false, reason: "signature does not match agent" });
+        }
+
+        // The agent path: authorised on-chain AND a real grant exists.
+        const permitted = await chain.isAgentReleasePermitted(
+          patientHash as `0x${string}`,
+          agent as `0x${string}`,
+        );
+        if (!permitted) {
+          return send(res, 403, {
+            guardian: id,
+            released: false,
+            reason: "agent not authorised on-chain, or no active grant, or record frozen",
+          });
+        }
+
+        const share = shares.get(patientHash);
+        if (!share) {
+          return send(res, 404, { guardian: id, released: false, reason: "no share held for that patient" });
+        }
+
+        return send(res, 200, { guardian: id, released: true, share });
+      }
+
       return send(res, 404, { error: "not found" });
     } catch (error) {
       const message = error instanceof Error ? error.message : "unknown error";

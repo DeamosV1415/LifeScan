@@ -31,6 +31,33 @@ const ACCESS_LOG_ABI = [
     inputs: [{ name: "patientHash", type: "bytes32" }],
     outputs: [{ type: "bool" }],
   },
+  {
+    type: "function",
+    name: "getAccessHistory",
+    stateMutability: "view",
+    inputs: [{ name: "patientHash", type: "bytes32" }],
+    outputs: [
+      {
+        type: "tuple[]",
+        components: [
+          { name: "provider", type: "address" },
+          { name: "timestamp", type: "uint64" },
+          { name: "reasonCode", type: "uint16" },
+          { name: "contextHash", type: "bytes32" },
+        ],
+      },
+    ],
+  },
+] as const;
+
+const AGENT_LOG_ABI = [
+  {
+    type: "function",
+    name: "isAgent",
+    stateMutability: "view",
+    inputs: [{ name: "agent", type: "address" }],
+    outputs: [{ type: "bool" }],
+  },
 ] as const;
 
 /** How long a break-glass grant remains usable. */
@@ -39,9 +66,11 @@ export const GRANT_WINDOW_SECONDS = 900n; // 15 minutes
 export interface ChainConfig {
   rpcUrl: string;
   accessLogAddress: `0x${string}`;
+  /** Optional — enables the autonomous-agent release path when set. */
+  agentLogAddress?: `0x${string}`;
 }
 
-export function createChainReader({ rpcUrl, accessLogAddress }: ChainConfig) {
+export function createChainReader({ rpcUrl, accessLogAddress, agentLogAddress }: ChainConfig) {
   const client = createPublicClient({
     chain: baseSepolia,
     transport: http(rpcUrl),
@@ -76,6 +105,54 @@ export function createChainReader({ rpcUrl, accessLogAddress }: ChainConfig) {
         if (i < attempts - 1) await new Promise((r) => setTimeout(r, 1000));
       }
       return false;
+    },
+
+    /**
+     * The autonomous-agent release path.
+     *
+     * The triage agent is not the human provider, so it cannot present the
+     * provider's grant. Instead a Guardian releases to it only when BOTH hold:
+     *   - the agent is authorised on-chain (AgentActionLog.isAgent), and
+     *   - a real break-glass grant for this patient exists within the window
+     *     AND the record is not frozen.
+     * So the agent can only ever decrypt off the back of a genuine break-glass
+     * event, and a patient freeze shuts it out exactly as it shuts out a human.
+     */
+    async isAgentReleasePermitted(
+      patientHash: `0x${string}`,
+      agent: `0x${string}`,
+    ): Promise<boolean> {
+      if (!agentLogAddress) return false;
+
+      const authorized = await client.readContract({
+        address: agentLogAddress,
+        abi: AGENT_LOG_ABI,
+        functionName: "isAgent",
+        args: [agent],
+      });
+      if (!authorized) return false;
+
+      const attempts = 3;
+      for (let i = 0; i < attempts; i++) {
+        if (await this.hasAnyRecentGrant(patientHash)) return true;
+        if (i < attempts - 1) await new Promise((r) => setTimeout(r, 1000));
+      }
+      return false;
+    },
+
+    /** True if any unexpired grant exists for the patient and it is not frozen. */
+    async hasAnyRecentGrant(patientHash: `0x${string}`): Promise<boolean> {
+      if (await this.isFrozen(patientHash)) return false;
+
+      const history = (await client.readContract({
+        address: accessLogAddress,
+        abi: ACCESS_LOG_ABI,
+        functionName: "getAccessHistory",
+        args: [patientHash],
+      })) as readonly { timestamp: bigint }[];
+
+      const now = BigInt(Math.floor(Date.now() / 1000));
+      return history.some((record) => record.timestamp + GRANT_WINDOW_SECONDS >= now);
     },
 
     async isFrozen(patientHash: `0x${string}`): Promise<boolean> {

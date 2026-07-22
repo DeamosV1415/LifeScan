@@ -31,6 +31,7 @@ if (!accessLogAddress) {
 const chain = createChainReader({
   rpcUrl: process.env.BASE_SEPOLIA_RPC_URL ?? "https://sepolia.base.org",
   accessLogAddress: accessLogAddress as `0x${string}`,
+  agentLogAddress: process.env.NEXT_PUBLIC_AGENT_LOG_ADDRESS as `0x${string}` | undefined,
 });
 
 const shares = createShareStore(
