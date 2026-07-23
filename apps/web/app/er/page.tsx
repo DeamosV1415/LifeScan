@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Wordmark, Eyebrow, LivePill } from "@/components/ui";
 
 /**
  * The ER dashboard — the receiving hospital's screen.
@@ -46,8 +47,8 @@ const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL ?? "http://localhost:4100";
 const KIND_STYLE: Record<TraceEvent["kind"], string> = {
   trigger: "text-implant",
   perceive: "text-info",
-  reason: "text-ink-600",
-  tool: "text-white",
+  reason: "text-muted",
+  tool: "text-text",
   chain: "text-vital",
   done: "text-vital",
   error: "text-critical",
@@ -89,26 +90,23 @@ export default function ErDashboard() {
   const active = events.some((e) => e.kind === "trigger") && !events.some((e) => e.kind === "done");
 
   return (
-    <main className="mx-auto min-h-dvh w-full max-w-3xl px-5 py-8">
-      <header className="flex items-center justify-between">
+    <main className="mx-auto min-h-dvh w-full max-w-3xl px-5 py-8 sm:px-6">
+      <header className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-white">Emergency Department</h1>
-          <p className="text-xs text-ink-600">Gwalior Trauma Centre · incoming patient board</p>
+          <Wordmark size="sm" />
+          <h1 className="mt-3 text-xl font-bold text-text">Emergency Department</h1>
+          <p className="text-xs text-muted">Gwalior Trauma Centre · incoming patient board</p>
         </div>
-        <span
-          className={`flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${
-            connected ? "bg-vital/10 text-vital" : "bg-ink-800 text-ink-600"
-          }`}
-        >
-          <span className={`size-2 rounded-full ${connected ? "bg-vital" : "bg-ink-600"}`} />
-          {connected ? "Live" : "Connecting…"}
-        </span>
+        <LivePill live={connected} />
       </header>
 
       {!triage && (
-        <div className="mt-16 text-center text-ink-600">
-          <p className="text-sm">Waiting for an incoming patient…</p>
-          <p className="mt-1 text-xs">
+        <div className="mt-16 flex flex-col items-center text-center">
+          <span className="grid size-12 place-items-center rounded-full border border-line text-2xl">
+            🚑
+          </span>
+          <p className="mt-4 text-sm font-medium text-text">Waiting for an incoming patient…</p>
+          <p className="mt-1 max-w-sm text-xs leading-relaxed text-muted">
             This board lights up the moment a clinician breaks glass — the agent
             pushes the triage here before the ambulance arrives.
           </p>
@@ -117,20 +115,29 @@ export default function ErDashboard() {
 
       {triage && (
         <section
-          className={`mt-6 rounded-2xl border p-5 ${
-            active ? "border-caution/50 bg-caution/5" : "border-vital/30 bg-ink-900"
+          className={`mt-6 rounded-2xl border p-5 shadow-card rise ${
+            active ? "border-caution/50" : "border-vital/30"
           }`}
+          style={{
+            background: active
+              ? "linear-gradient(160deg, color-mix(in srgb, var(--caution) 8%, transparent), var(--surface))"
+              : "var(--surface)",
+          }}
         >
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold tracking-widest text-caution uppercase">
-              {active ? "◉ Incoming — triage in progress" : "Incoming patient"}
+          <div className="flex items-center justify-between gap-3">
+            <p
+              className="eyebrow flex items-center gap-2"
+              style={{ color: active ? "var(--caution)" : "var(--vital)" }}
+            >
+              {active && <span className="size-2 rounded-full bg-caution live-dot" />}
+              {active ? "Incoming — triage in progress" : "Incoming patient"}
             </p>
-            <span className="text-3xl font-black text-critical">{triage.bloodGroup}</span>
+            <span className="font-display text-3xl font-bold text-critical tnum">{triage.bloodGroup}</span>
           </div>
 
           {triage.contraindications.length > 0 && (
-            <div className="mt-4 rounded-xl bg-critical/10 p-4">
-              <p className="text-xs font-bold tracking-wide text-critical uppercase">
+            <div className="mt-4 rounded-xl border border-critical/30 bg-critical/10 p-4">
+              <p className="eyebrow" style={{ color: "var(--danger)" }}>
                 ⚠ Contraindications — act on these first
               </p>
               <ul className="mt-2 space-y-1">
@@ -150,11 +157,9 @@ export default function ErDashboard() {
           </div>
 
           {sbar && (
-            <div className="mt-5 border-t border-ink-800 pt-4">
-              <p className="text-[11px] font-semibold tracking-widest text-info uppercase">
-                SBAR handoff
-              </p>
-              <dl className="mt-2 space-y-1.5 text-sm">
+            <div className="mt-5 border-t border-line pt-4">
+              <Eyebrow className="!text-info">SBAR handoff</Eyebrow>
+              <dl className="mt-2.5 space-y-1.5 text-sm">
                 <SbarLine k="S" label="Situation" v={sbar.situation} />
                 <SbarLine k="B" label="Background" v={sbar.background} />
                 <SbarLine k="A" label="Assessment" v={sbar.assessment} />
@@ -164,29 +169,25 @@ export default function ErDashboard() {
           )}
 
           {preauth && (
-            <div className="mt-5 border-t border-ink-800 pt-4">
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] font-semibold tracking-widest text-info uppercase">
-                  Insurance pre-auth · prepared
-                </p>
-                <span className="rounded-full bg-info/15 px-2.5 py-0.5 text-[10px] font-semibold text-info">
-                  awaiting human release
-                </span>
+            <div className="mt-5 border-t border-line pt-4">
+              <div className="flex items-center justify-between gap-2">
+                <Eyebrow className="!text-info">Insurance pre-auth · prepared</Eyebrow>
+                <span className="chip chip-info">awaiting human release</span>
               </div>
-              <div className="mt-2 flex items-baseline justify-between">
-                <p className="text-sm text-white">{preauth.provisionalDiagnosis}</p>
-                <p className="text-lg font-bold text-white">
+              <div className="mt-2 flex items-baseline justify-between gap-3">
+                <p className="text-sm text-text">{preauth.provisionalDiagnosis}</p>
+                <p className="font-display text-lg font-bold text-text tnum">
                   ₹{preauth.estimatedAmountInr.toLocaleString("en-IN")}
                 </p>
               </div>
               {preauth.itemization.length > 0 && (
-                <ul className="mt-2 space-y-0.5 text-xs text-ink-600">
+                <ul className="mt-2 space-y-0.5 text-xs text-muted">
                   {preauth.itemization.map((it, i) => (
                     <li key={i}>· {it}</li>
                   ))}
                 </ul>
               )}
-              <p className="mt-2 text-[11px] text-ink-600">
+              <p className="mt-2 text-[11px] text-faint">
                 The agent prepared and anchored this packet. Funds are released by
                 a human admin — never the agent.
               </p>
@@ -196,20 +197,18 @@ export default function ErDashboard() {
       )}
 
       <section className="mt-6">
-        <p className="text-[11px] font-semibold tracking-widest text-ink-600 uppercase">
-          Agent trace · live
-        </p>
+        <Eyebrow>Agent trace · live</Eyebrow>
         <div
           ref={feedRef}
-          className="mt-2 max-h-72 overflow-y-auto rounded-xl border border-ink-800 bg-ink-950 p-4 font-mono text-xs"
+          className="mt-2 max-h-72 overflow-y-auto rounded-xl border border-line bg-bg-2 p-4 font-mono text-xs"
         >
           {events.length === 0 ? (
-            <p className="text-ink-600">No activity yet.</p>
+            <p className="text-faint">No activity yet.</p>
           ) : (
             <ol className="space-y-1.5">
               {events.map((e, i) => (
                 <li key={i} className={KIND_STYLE[e.kind]}>
-                  <span className="text-ink-600">[{e.kind}]</span> {e.text}
+                  <span className="text-faint">[{e.kind}]</span> {e.text}
                   {e.href && (
                     <a href={e.href} target="_blank" rel="noreferrer" className="ml-2 text-info underline">
                       tx ↗
@@ -238,10 +237,10 @@ function Field({ label, items, tone }: { label: string; items: string[]; tone?: 
   if (!items || items.length === 0) return null;
   return (
     <div>
-      <p className="text-[11px] font-semibold tracking-widest text-ink-600 uppercase">{label}</p>
+      <p className="eyebrow">{label}</p>
       <ul className="mt-1 space-y-0.5">
         {items.map((it, i) => (
-          <li key={i} className={tone === "critical" ? "font-semibold text-critical" : "text-white"}>
+          <li key={i} className={tone === "critical" ? "font-semibold text-critical" : "text-text"}>
             {it}
           </li>
         ))}
@@ -252,12 +251,12 @@ function Field({ label, items, tone }: { label: string; items: string[]; tone?: 
 
 function SbarLine({ k, label, v }: { k: string; label: string; v: string }) {
   return (
-    <div className="flex gap-2">
-      <dt className="flex size-5 shrink-0 items-center justify-center rounded bg-info/20 text-[11px] font-bold text-info">
+    <div className="flex gap-2.5">
+      <dt className="flex size-5 shrink-0 items-center justify-center rounded-md bg-info/20 font-mono text-[11px] font-bold text-info">
         {k}
       </dt>
-      <dd className="text-white">
-        <span className="text-ink-600">{label}:</span> {v}
+      <dd className="text-text">
+        <span className="text-faint">{label}:</span> {v}
       </dd>
     </div>
   );

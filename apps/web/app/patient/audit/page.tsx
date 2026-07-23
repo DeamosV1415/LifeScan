@@ -14,6 +14,7 @@ import {
 } from "@/lib/contracts";
 import { useProviderWallet } from "@/lib/useProviderWallet";
 import { DEMO_PATIENT_ID } from "@/lib/record";
+import { Wordmark, Eyebrow, LivePill, PageShell } from "@/components/ui";
 
 /**
  * The patient's audit view — the accountability half of the pitch, made visible.
@@ -150,20 +151,26 @@ export default function PatientAuditPage() {
     [address, getWalletClient, patientHash, refresh],
   );
 
-  if (!ready) return <Shell><p className="text-ink-600">Loading…</p></Shell>;
+  if (!ready)
+    return (
+      <PageShell>
+        <p className="text-muted">Loading…</p>
+      </PageShell>
+    );
 
   if (!authenticated) {
     return (
-      <Shell>
-        <h1 className="text-2xl font-bold text-white">Your access log</h1>
-        <p className="mt-3 text-sm text-ink-600">
+      <PageShell>
+        <Wordmark />
+        <h1 className="mt-9 text-2xl font-bold text-text">Your access log</h1>
+        <p className="mt-3 text-sm leading-relaxed text-muted">
           Sign in with the email you used to issue your card. Only you — the
           record&apos;s on-chain owner — can freeze it or revoke a provider.
         </p>
-        <button onClick={login} className="mt-6 w-full rounded-xl bg-vital px-5 py-4 font-bold text-ink-950">
+        <button onClick={login} className="btn btn-vital btn-block mt-6">
           Sign in
         </button>
-      </Shell>
+      </PageShell>
     );
   }
 
@@ -173,24 +180,23 @@ export default function PatientAuditPage() {
     owner.toLowerCase() === address.toLowerCase();
 
   return (
-    <Shell>
-      <span className="text-xs font-semibold tracking-[0.2em] text-ink-600 uppercase">
-        Patient · access log
-      </span>
-      <div className="mt-3 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">Who touched my record</h1>
-        <span className="flex items-center gap-1.5 text-xs text-ink-600">
-          <span className="size-2 animate-pulse rounded-full bg-vital" /> live
-        </span>
+    <PageShell>
+      <Wordmark />
+      <div className="mt-8 rise">
+        <Eyebrow>Patient · access log</Eyebrow>
+        <div className="mt-2 flex items-center justify-between gap-3">
+          <h1 className="text-2xl font-bold text-text">Who touched my record</h1>
+          <LivePill live label="live" />
+        </div>
+        <p className="mt-1.5 font-mono text-xs break-all text-faint">
+          {patientId} · {patientHash.slice(0, 18)}…
+        </p>
       </div>
-      <p className="mt-1 text-xs break-all text-ink-600">
-        {patientId} · {patientHash.slice(0, 18)}…
-      </p>
 
       {frozen && (
         <div className="mt-4 rounded-xl border border-critical/40 bg-critical/10 p-4">
           <p className="text-sm font-bold text-critical">🔒 Record frozen</p>
-          <p className="mt-1 text-xs text-ink-600">
+          <p className="mt-1 text-xs text-muted">
             Every break-glass is refused on-chain — enforced by the contract, not
             this screen.
           </p>
@@ -201,7 +207,7 @@ export default function PatientAuditPage() {
         <button
           onClick={freeze}
           disabled={!hasWallet || busy !== null}
-          className="mt-5 w-full rounded-xl bg-critical px-5 py-4 font-black tracking-wide text-white uppercase disabled:opacity-40"
+          className="btn btn-danger btn-block mt-5 tracking-wide uppercase"
         >
           {busy === "freeze" ? "Freezing…" : "🔒 Freeze my record"}
         </button>
@@ -210,14 +216,14 @@ export default function PatientAuditPage() {
         <button
           onClick={unfreeze}
           disabled={!hasWallet || busy !== null}
-          className="mt-5 w-full rounded-xl border border-ink-700 px-5 py-3 text-sm font-semibold text-ink-600 disabled:opacity-40"
+          className="btn btn-ghost btn-block mt-5 text-sm"
         >
           {busy === "unfreeze" ? "Un-freezing…" : "Un-freeze (demo reset)"}
         </button>
       )}
 
       {note && (
-        <p className="mt-4 rounded-lg bg-ink-900 p-3 text-sm text-info">
+        <p className="mt-4 rounded-xl border border-line bg-surface p-3 text-sm text-info">
           {note.text}
           {note.href && (
             <a href={note.href} target="_blank" rel="noreferrer" className="ml-2 underline">
@@ -228,19 +234,17 @@ export default function PatientAuditPage() {
       )}
 
       {authenticated && owner !== null && !isOwner && (
-        <p className="mt-4 rounded-lg bg-caution/10 p-3 text-xs text-caution">
+        <p className="mt-4 rounded-xl border border-caution/30 bg-caution/10 p-3 text-xs text-caution">
           This record is owned by a different wallet ({owner.slice(0, 10)}…), so
           freeze/revoke will be refused on-chain. Sign in with the wallet that
           issued the card.
         </p>
       )}
 
-      <section className="mt-6">
-        <p className="text-[11px] font-semibold tracking-widest text-ink-600 uppercase">
-          Access history · on-chain
-        </p>
+      <section className="mt-7">
+        <Eyebrow>Access history · on-chain</Eyebrow>
         {history.length === 0 ? (
-          <p className="mt-3 text-sm text-ink-600">
+          <p className="mt-3 rounded-xl border border-dashed border-line p-6 text-center text-sm text-muted">
             No access yet. This list fills the instant a clinician breaks glass.
           </p>
         ) : (
@@ -248,29 +252,27 @@ export default function PatientAuditPage() {
             {history.map((a, i) => {
               const isBlocked = blocked.has(a.provider.toLowerCase());
               return (
-                <li key={`${a.provider}-${a.timestamp}-${i}`} className="rounded-xl border border-ink-800 bg-ink-900 p-4">
+                <li key={`${a.provider}-${a.timestamp}-${i}`} className="card p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-sm font-semibold text-white">{reasonLabel(a.reasonCode)}</p>
-                      <p className="mt-0.5 text-xs text-ink-600">{timeAgo(a.timestamp)}</p>
+                      <p className="text-sm font-semibold text-text">{reasonLabel(a.reasonCode)}</p>
+                      <p className="mt-0.5 text-xs text-faint">{timeAgo(a.timestamp)}</p>
                       <a
                         href={explorerAddress(a.provider)}
                         target="_blank"
                         rel="noreferrer"
-                        className="mt-1 inline-block font-mono text-[11px] text-info underline"
+                        className="link mt-1 inline-block font-mono text-[11px]"
                       >
                         {a.provider.slice(0, 10)}…{a.provider.slice(-6)}
                       </a>
                     </div>
                     {isBlocked ? (
-                      <span className="shrink-0 rounded-full bg-critical/15 px-3 py-1 text-[11px] font-bold text-critical">
-                        Revoked
-                      </span>
+                      <span className="chip chip-danger">Revoked</span>
                     ) : (
                       <button
                         onClick={() => revoke(a.provider)}
                         disabled={!hasWallet || busy !== null || frozen}
-                        className="shrink-0 rounded-full border border-critical/50 px-3 py-1 text-[11px] font-bold text-critical disabled:opacity-40"
+                        className="shrink-0 rounded-full border border-critical/50 px-3 py-1 text-[11px] font-bold text-critical transition hover:bg-critical/10 disabled:opacity-40"
                       >
                         {busy === a.provider ? "Revoking…" : "Revoke"}
                       </button>
@@ -282,7 +284,7 @@ export default function PatientAuditPage() {
           </ul>
         )}
       </section>
-    </Shell>
+    </PageShell>
   );
 }
 
@@ -300,8 +302,4 @@ function friendlyError(e: unknown): string {
   if (/PatientNotRegistered/.test(msg)) return "This record has not been claimed on-chain yet.";
   if (/User rejected|denied/i.test(msg)) return "Transaction cancelled.";
   return msg;
-}
-
-function Shell({ children }: { children: React.ReactNode }) {
-  return <main className="mx-auto min-h-dvh w-full max-w-md px-5 py-10">{children}</main>;
 }

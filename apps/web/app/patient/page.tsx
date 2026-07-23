@@ -15,6 +15,7 @@ import { distributeShares, guardianEndpoints } from "@/lib/guardians";
 import { useProviderWallet } from "@/lib/useProviderWallet";
 import { buildTier0 } from "@/lib/tier0";
 import { DEMO_PATIENT_ID, DEMO_RECORD } from "@/lib/record";
+import { Wordmark, Eyebrow, PageShell } from "@/components/ui";
 
 /**
  * The patient side: seal a clinical record and issue a card.
@@ -119,76 +120,89 @@ export default function PatientPage() {
     }
   }, [address, getWalletClient, patientHash]);
 
-  if (!ready) return <Shell><p className="text-ink-600">Loading…</p></Shell>;
+  if (!ready)
+    return (
+      <PageShell>
+        <p className="text-muted">Loading…</p>
+      </PageShell>
+    );
 
   if (!authenticated) {
     return (
-      <Shell>
-        <h1 className="text-2xl font-bold text-white">Your LifeScan card</h1>
-        <p className="mt-3 text-sm text-ink-600">
+      <PageShell>
+        <Wordmark />
+        <h1 className="mt-9 text-2xl font-bold text-text">Your LifeScan card</h1>
+        <p className="mt-3 text-sm leading-relaxed text-muted">
           Sign in to seal your medical record and issue a card. Your record is
           encrypted on this device before anything leaves it.
         </p>
-        <button onClick={login} className="mt-6 w-full rounded-xl bg-vital px-5 py-4 font-bold text-ink-950">
+        <button onClick={login} className="btn btn-vital btn-block mt-6">
           Sign in
         </button>
-      </Shell>
+      </PageShell>
     );
   }
 
   return (
-    <Shell>
-      <span className="text-xs font-semibold tracking-[0.2em] text-ink-600 uppercase">
-        Patient · issue card
-      </span>
-      <h1 className="mt-3 text-2xl font-bold text-white">{DEMO_RECORD.name}</h1>
-      <p className="text-sm text-ink-600">
-        {DEMO_RECORD.bloodGroup} · {DEMO_RECORD.allergies[0]?.substance} allergy · pacemaker
-      </p>
+    <PageShell>
+      <Wordmark />
+      <div className="mt-8 rise">
+        <Eyebrow>Patient · issue card</Eyebrow>
+        <h1 className="mt-2 text-2xl font-bold text-text">{DEMO_RECORD.name}</h1>
+        <p className="mt-1 text-sm text-muted">
+          {DEMO_RECORD.bloodGroup} · {DEMO_RECORD.allergies[0]?.substance} allergy · pacemaker
+        </p>
+      </div>
 
       {phase === "idle" || phase === "error" ? (
-        <button
-          onClick={seal}
-          disabled={!hasWallet}
-          className="mt-6 w-full rounded-xl bg-vital px-5 py-4 font-bold text-ink-950 disabled:opacity-40"
-        >
+        <button onClick={seal} disabled={!hasWallet} className="btn btn-vital btn-block mt-6">
           Seal record &amp; issue card
         </button>
       ) : null}
 
       {steps.length > 0 && (
-        <ol className="mt-6 space-y-2 border-l border-ink-700 pl-4">
-          {steps.map((s, i) => (
-            <li key={i} className="text-sm text-ink-600">{s}</li>
-          ))}
+        <ol className="mt-6 space-y-3">
+          {steps.map((s, i) => {
+            const last = i === steps.length - 1;
+            const working = phase === "sealing" && last;
+            return (
+              <li key={i} className="flex gap-3 text-sm">
+                <span
+                  className={`mt-1.5 size-2 shrink-0 rounded-full ${working ? "bg-vital live-dot" : "bg-vital"}`}
+                  style={!working && phase === "sealing" ? { background: "var(--faint)" } : undefined}
+                />
+                <span className={last && phase !== "sealing" ? "text-text" : "text-muted"}>{s}</span>
+              </li>
+            );
+          })}
         </ol>
       )}
 
-      {error && <p className="mt-4 rounded-lg bg-critical/10 p-3 text-sm text-critical">{error}</p>}
+      {error && (
+        <p className="mt-4 rounded-xl border border-critical/30 bg-critical/10 p-3 text-sm text-critical">
+          {error}
+        </p>
+      )}
 
       {cardUrl && (
-        <div className="mt-6 rounded-xl border border-vital/30 bg-ink-900 p-4">
-          <p className="text-xs font-semibold text-vital uppercase">Card payload</p>
-          <p className="mt-2 text-xs break-all text-ink-600">{cardUrl}</p>
-          <a href={cardUrl} className="mt-3 inline-block text-sm text-info underline">
+        <div
+          className="card mt-6 p-4 rise"
+          style={{ borderColor: "color-mix(in srgb, var(--vital) 30%, transparent)" }}
+        >
+          <Eyebrow className="!text-vital">Card payload</Eyebrow>
+          <p className="mt-2 font-mono text-xs break-all text-muted">{cardUrl}</p>
+          <a href={cardUrl} className="link mt-3 inline-block text-sm">
             Preview the scan →
           </a>
         </div>
       )}
 
-      <a
-        href="/patient/audit"
-        className="mt-6 block rounded-xl border border-ink-800 bg-ink-900 px-5 py-4 transition hover:border-ink-700"
-      >
-        <span className="block text-sm font-bold text-white">Your access log →</span>
-        <span className="mt-0.5 block text-xs text-ink-600">
+      <a href="/patient/audit" className="card mt-6 block px-5 py-4 transition hover:border-line-strong">
+        <span className="block text-sm font-semibold text-text">Your access log →</span>
+        <span className="mt-0.5 block text-xs text-muted">
           See who broke glass, freeze the record, or revoke a provider.
         </span>
       </a>
-    </Shell>
+    </PageShell>
   );
-}
-
-function Shell({ children }: { children: React.ReactNode }) {
-  return <main className="mx-auto min-h-dvh w-full max-w-md px-5 py-10">{children}</main>;
 }

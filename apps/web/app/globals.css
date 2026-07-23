@@ -1,40 +1,377 @@
 @import "tailwindcss";
 
-/* Palette lifted from the pitch deck so the app and slides read as one system. */
-@theme {
-  --color-ink-950: #080d18;
-  --color-ink-900: #0d1424;
-  --color-ink-800: #141d33;
-  --color-ink-700: #1e2a45;
-  --color-ink-600: #2b3a5c;
+/*
+ * LifeScan design system.
+ *
+ * The rebuild moves the app off "neon on flat black" and onto a layered,
+ * restrained system: a cool near-black base, hairline borders, soft shadows,
+ * a real text hierarchy, and colour reserved for the facts that actually carry
+ * clinical weight (a blood group, an allergy). The emergency scan screen is the
+ * one place colour stays loud on purpose — there, legibility beats subtlety.
+ *
+ * Type: Space Grotesk (display / headings / big numbers), Inter (body / UI),
+ * JetBrains Mono (addresses, IDs, the agent trace). Loaded in layout.tsx.
+ */
 
-  --color-critical: #ff4d5e;
-  --color-caution: #fbbf24;
-  --color-vital: #2dd4a7;
-  --color-info: #38bdf8;
-  --color-implant: #a78bfa;
+:root {
+  color-scheme: dark;
+
+  /* Surfaces — cool near-black with a blue undertone, stacked by elevation. */
+  --bg: #090d16;
+  --bg-2: #0c111c;
+  --surface: #131a29;
+  --surface-2: #1a2234;
+  --field: rgba(255, 255, 255, 0.045);
+  --field-hover: rgba(255, 255, 255, 0.075);
+
+  /* Lines — hairlines, never saturated. */
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.14);
+
+  /* Text hierarchy — the old muted (#2b3a5c) was unreadable; this is not. */
+  --text: #eef1f8;
+  --muted: #98a6c0;
+  --faint: #616e8a;
+
+  /* Semantic accents — tuned a shade off neon, kept meaningful. */
+  --danger: #fb5468;
+  --vital: #33d6a6;
+  --info: #57a9ff;
+  --caution: #f5b53f;
+  --implant: #ac91fb;
+  --brand: #fb5468;
+
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-lg: 22px;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35), 0 12px 32px -14px rgba(0, 0, 0, 0.65);
+  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.5), 0 28px 64px -22px rgba(0, 0, 0, 0.75);
+}
+
+@theme inline {
+  /* New semantic tokens. */
+  --color-bg: var(--bg);
+  --color-bg-2: var(--bg-2);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+
+  --color-critical: var(--danger);
+  --color-vital: var(--vital);
+  --color-info: var(--info);
+  --color-caution: var(--caution);
+  --color-implant: var(--implant);
+  --color-brand: var(--brand);
+
+  /* Back-compat ink ramp, remapped onto the new system so existing utilities
+     (bg-ink-900, text-ink-600, border-ink-800, text-ink-950 …) inherit the new
+     look with no markup change. 950 stays dark (page bg + text on bright
+     buttons); 600 is now a readable muted; 800/700 are hairline-weight. */
+  --color-ink-950: var(--bg);
+  --color-ink-900: var(--surface);
+  --color-ink-800: #212a3d;
+  --color-ink-700: #2d3852;
+  --color-ink-600: var(--muted);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-space), var(--font-inter), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, "SFMono-Regular", "Menlo", monospace;
+
+  --radius-xl: 22px;
 }
 
 html,
 body {
-  background-color: var(--color-ink-950);
-  color: #e8edf7;
+  background-color: var(--bg);
+  color: var(--text);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  /* Emergency data must stay legible when a phone is in a bloodied glove or
-     bright sunlight — never let the OS shrink our text. */
+  font-family: var(--font-sans);
+  /* A whisper of top-glow gives the flat page depth without lighting up the
+     emergency screens. Fixed so it doesn't scroll away on long pages. */
+  background-image: radial-gradient(1100px 520px at 50% -8%, rgba(87, 169, 255, 0.06), transparent 70%);
+  background-attachment: fixed;
+  text-rendering: optimizeLegibility;
+  /* Emergency data must stay legible in a bloodied glove or bright sun — never
+     let the OS shrink our text. */
   text-size-adjust: 100%;
 }
 
-/* Respect users who ask for reduced motion; the scan page animates on entry. */
+::selection {
+  background: color-mix(in srgb, var(--info) 32%, transparent);
+  color: #fff;
+}
+
+/* Headings and the big numbers speak in the display face. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.015em;
+}
+
+/* Quiet, thin scrollbars. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.24);
+}
+
+/* Visible, on-brand focus for keyboard users. */
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--info) 70%, transparent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Pointer affordances. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+a[href],
+label[for],
+select:not(:disabled),
+summary {
+  cursor: pointer;
+}
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+@layer components {
+  /* Eyebrow — the small tracked uppercase label used across every page. */
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+
+  /* Card — the one true surface. Hairline border + soft layered shadow. */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+  }
+  .card-quiet {
+    background: color-mix(in srgb, var(--surface) 60%, transparent);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+
+  /* Inputs — consistent field styling with a focus ring. */
+  .input {
+    width: 100%;
+    background: var(--field);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    padding: 0.72rem 0.9rem;
+    font-size: 0.875rem;
+    color: var(--text);
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .input::placeholder {
+    color: var(--faint);
+  }
+  .input:focus {
+    outline: none;
+    border-color: color-mix(in srgb, var(--info) 65%, transparent);
+    background: var(--field-hover);
+  }
+
+  /* Buttons. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 0.8rem 1.1rem;
+    border: 1px solid transparent;
+    transition: transform 0.08s ease, filter 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+  .btn:disabled {
+    opacity: 0.4;
+  }
+  .btn-block {
+    width: 100%;
+  }
+  .btn-vital {
+    background: var(--vital);
+    color: #04150f;
+  }
+  .btn-vital:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
+  .btn-danger {
+    background: color-mix(in srgb, var(--danger) 92%, black);
+    color: #fff;
+    box-shadow: 0 8px 24px -12px color-mix(in srgb, var(--danger) 90%, transparent);
+  }
+  .btn-danger:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
+  .btn-ghost {
+    background: var(--field);
+    border-color: var(--line-strong);
+    color: var(--text);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--field-hover);
+  }
+
+  /* Chips / status pills. */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border-radius: 999px;
+    padding: 0.2rem 0.65rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+  }
+  .chip-muted {
+    background: var(--field);
+    color: var(--muted);
+    border-color: var(--line);
+  }
+  .chip-vital {
+    background: color-mix(in srgb, var(--vital) 14%, transparent);
+    color: var(--vital);
+    border-color: color-mix(in srgb, var(--vital) 35%, transparent);
+  }
+  .chip-danger {
+    background: color-mix(in srgb, var(--danger) 14%, transparent);
+    color: var(--danger);
+    border-color: color-mix(in srgb, var(--danger) 35%, transparent);
+  }
+  .chip-info {
+    background: color-mix(in srgb, var(--info) 14%, transparent);
+    color: var(--info);
+    border-color: color-mix(in srgb, var(--info) 35%, transparent);
+  }
+  .chip-implant {
+    background: color-mix(in srgb, var(--implant) 14%, transparent);
+    color: var(--implant);
+    border-color: color-mix(in srgb, var(--implant) 35%, transparent);
+  }
+  .chip-caution {
+    background: color-mix(in srgb, var(--caution) 14%, transparent);
+    color: var(--caution);
+    border-color: color-mix(in srgb, var(--caution) 35%, transparent);
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+  }
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+  /* Tabular figures for numbers that should line up / not jitter. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+  .link {
+    color: var(--info);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: color-mix(in srgb, var(--info) 45%, transparent);
+  }
+  .link:hover {
+    text-decoration-color: var(--info);
+  }
+  .divider-top {
+    border-top: 1px solid var(--line);
+  }
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  .shadow-pop {
+    box-shadow: var(--shadow-pop);
+  }
+}
+
+/* ---- Motion — subtle entrance + a calm "live" pulse. ---- */
+@keyframes ls-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ls-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes ls-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--vital) 55%, transparent);
+  }
+  50% {
+    opacity: 0.75;
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--vital) 0%, transparent);
+  }
+}
+
+.rise {
+  animation: ls-rise 0.4s cubic-bezier(0.22, 0.8, 0.28, 1) both;
+}
+.fade-in {
+  animation: ls-fade 0.4s ease both;
+}
+.live-dot {
+  animation: ls-pulse 1.9s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 }

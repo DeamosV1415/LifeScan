@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { explorerAddress, explorerTx } from "@/lib/contracts";
+import { Wordmark, Eyebrow, LivePill } from "@/components/ui";
 
 /**
  * Hospital admin console — the onboarding surface behind the whole identity
@@ -111,30 +111,17 @@ export default function AdminPage() {
   const activeCount = providers.filter((p) => p.active).length;
 
   return (
-    <main className="mx-auto min-h-dvh w-full max-w-3xl px-5 py-10 sm:px-8">
+    <main className="mx-auto min-h-dvh w-full max-w-3xl px-5 py-10 sm:px-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="grid size-7 place-items-center rounded bg-critical text-sm font-black text-white">
-            +
-          </span>
-          <span className="text-sm font-bold tracking-[0.2em] text-white uppercase">
-            LifeScan
-          </span>
-        </Link>
-        <span className="rounded-full border border-implant/40 bg-implant/10 px-3 py-1 text-[11px] font-semibold tracking-widest text-implant uppercase">
-          Admin
-        </span>
+        <Wordmark />
+        <span className="chip chip-implant">Admin</span>
       </div>
 
-      <div className="mt-8">
-        <span className="text-xs font-semibold tracking-[0.2em] text-ink-600 uppercase">
-          Hospital onboarding
-        </span>
-        <h1 className="mt-2 text-3xl leading-tight font-bold text-white">
-          Provider registry
-        </h1>
-        <p className="mt-3 max-w-xl text-sm leading-relaxed text-ink-600">
+      <div className="mt-9 rise">
+        <Eyebrow>Hospital onboarding</Eyebrow>
+        <h1 className="mt-2 text-[2rem] leading-tight font-bold text-text">Provider registry</h1>
+        <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted">
           Email is the doorknob; this registry is the lock. A clinician&apos;s
           login mints a wallet with <em>zero</em> authority — only a registration
           here, bound to an HFR facility ID, lets that address ever break glass.
@@ -150,30 +137,31 @@ export default function AdminPage() {
       </div>
 
       {state && (
-        <p className="mt-3 text-[11px] text-ink-600">
+        <p className="mt-3 text-[11px] text-faint">
           Registry{" "}
-          <a href={explorerAddress(state.registry)} target="_blank" rel="noreferrer" className="font-mono text-info underline">
+          <a href={explorerAddress(state.registry)} target="_blank" rel="noreferrer" className="link font-mono">
             {state.registry.slice(0, 10)}…{state.registry.slice(-6)}
           </a>{" "}
           · admin{" "}
-          <a href={explorerAddress(state.admin)} target="_blank" rel="noreferrer" className="font-mono text-info underline">
+          <a href={explorerAddress(state.admin)} target="_blank" rel="noreferrer" className="link font-mono">
             {state.admin.slice(0, 10)}…{state.admin.slice(-6)}
           </a>
         </p>
       )}
 
       {/* Admin session */}
-      <section className="mt-8 rounded-2xl border border-ink-800 bg-ink-900 p-5">
+      <section className="card mt-8 p-5">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-bold text-white">Admin session</p>
-          <span
-            className={`flex items-center gap-1.5 text-[11px] font-semibold ${token ? "text-vital" : "text-ink-600"}`}
-          >
-            <span className={`size-2 rounded-full ${token ? "bg-vital" : "bg-ink-600"}`} />
+          <p className="text-sm font-semibold text-text">Admin session</p>
+          <span className={`chip ${token ? "chip-vital" : "chip-muted"}`}>
+            <span
+              className="size-1.5 rounded-full"
+              style={{ background: token ? "var(--vital)" : "var(--faint)" }}
+            />
             {token ? "writes unlocked" : "read-only"}
           </span>
         </div>
-        <p className="mt-1 text-xs leading-relaxed text-ink-600">
+        <p className="mt-1 text-xs leading-relaxed text-muted">
           The token is checked server-side; the deployer key that actually signs
           never reaches this browser. Kept in this device&apos;s local storage
           only.
@@ -184,7 +172,7 @@ export default function AdminPage() {
           onChange={(e) => saveToken(e.target.value)}
           placeholder="Admin token"
           autoComplete="off"
-          className="mt-3 w-full rounded-lg border border-ink-700 bg-ink-950 px-4 py-3 text-sm text-white placeholder:text-ink-600 focus:border-implant focus:outline-none"
+          className="input mt-3"
         />
         {state && !state.writesEnabled && (
           <p className="mt-2 text-[11px] text-caution">
@@ -195,9 +183,9 @@ export default function AdminPage() {
       </section>
 
       {/* Register form */}
-      <section className="mt-6 rounded-2xl border border-ink-800 bg-ink-900 p-5">
-        <p className="text-sm font-bold text-white">Register a clinician</p>
-        <p className="mt-1 text-xs text-ink-600">
+      <section className="card mt-6 p-5">
+        <p className="text-sm font-semibold text-text">Register a clinician</p>
+        <p className="mt-1 text-xs text-muted">
           The provider&apos;s wallet address comes from their Privy login. HFR ID
           binds it to a real facility.
         </p>
@@ -223,11 +211,7 @@ export default function AdminPage() {
               placeholder="Dr. Sharma, Gwalior Trauma Centre"
             />
           </div>
-          <button
-            type="submit"
-            disabled={busy !== null}
-            className="w-full rounded-xl bg-vital px-5 py-3.5 font-bold text-ink-950 transition hover:brightness-110 disabled:opacity-40"
-          >
+          <button type="submit" disabled={busy !== null} className="btn btn-vital btn-block">
             {busy === "register" ? "Registering on-chain…" : "Register provider"}
           </button>
         </form>
@@ -236,8 +220,10 @@ export default function AdminPage() {
       {/* Result note */}
       {note && (
         <p
-          className={`mt-5 rounded-xl p-4 text-sm ${
-            note.tone === "ok" ? "bg-vital/10 text-vital" : "bg-critical/10 text-critical"
+          className={`mt-5 rounded-xl border p-4 text-sm ${
+            note.tone === "ok"
+              ? "border-vital/30 bg-vital/10 text-vital"
+              : "border-critical/30 bg-critical/10 text-critical"
           }`}
         >
           {note.text}
@@ -252,61 +238,50 @@ export default function AdminPage() {
       {/* Roster */}
       <section className="mt-8">
         <div className="flex items-center justify-between">
-          <p className="text-[11px] font-semibold tracking-widest text-ink-600 uppercase">
-            Registered providers · on-chain
-          </p>
-          <span className="flex items-center gap-1.5 text-xs text-ink-600">
-            <span className="size-2 animate-pulse rounded-full bg-vital" /> live
-          </span>
+          <Eyebrow>Registered providers · on-chain</Eyebrow>
+          <LivePill live label="live" />
         </div>
 
         {loadError && (
-          <p className="mt-4 rounded-xl bg-critical/10 p-4 text-sm text-critical">{loadError}</p>
+          <p className="mt-4 rounded-xl border border-critical/30 bg-critical/10 p-4 text-sm text-critical">
+            {loadError}
+          </p>
         )}
 
-        {!state && !loadError && (
-          <p className="mt-4 text-sm text-ink-600">Reading the registry…</p>
-        )}
+        {!state && !loadError && <p className="mt-4 text-sm text-muted">Reading the registry…</p>}
 
         {state && providers.length === 0 && (
-          <p className="mt-4 rounded-xl border border-dashed border-ink-800 p-6 text-center text-sm text-ink-600">
+          <p className="mt-4 rounded-xl border border-dashed border-line p-6 text-center text-sm text-muted">
             No providers registered yet. Add the first one above.
           </p>
         )}
 
         <ul className="mt-4 space-y-3">
           {providers.map((p) => (
-            <li
-              key={p.address}
-              className="rounded-2xl border border-ink-800 bg-ink-900 p-4 sm:p-5"
-            >
+            <li key={p.address} className="card p-4 sm:p-5">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="truncate text-base font-semibold text-white">
+                    <p className="truncate text-base font-semibold text-text">
                       {p.name || "Unnamed provider"}
                     </p>
                     {p.active ? (
-                      <span className="rounded-full bg-vital/15 px-2.5 py-0.5 text-[10px] font-bold tracking-wide text-vital uppercase">
-                        Active
-                      </span>
+                      <span className="chip chip-vital">Active</span>
                     ) : (
-                      <span className="rounded-full bg-critical/15 px-2.5 py-0.5 text-[10px] font-bold tracking-wide text-critical uppercase">
-                        Revoked
-                      </span>
+                      <span className="chip chip-danger">Revoked</span>
                     )}
                   </div>
-                  <p className="mt-1 font-mono text-[11px] text-ink-600">{p.hfrId || "no HFR ID"}</p>
+                  <p className="mt-1 font-mono text-[11px] text-faint">{p.hfrId || "no HFR ID"}</p>
                   <a
                     href={explorerAddress(p.address)}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-1 inline-block font-mono text-[11px] text-info underline"
+                    className="link mt-1 inline-block font-mono text-[11px]"
                   >
                     {p.address.slice(0, 12)}…{p.address.slice(-8)}
                   </a>
                   {p.registeredAt > 0 && (
-                    <p className="mt-1 text-[11px] text-ink-600">
+                    <p className="mt-1 text-[11px] text-faint">
                       registered {new Date(p.registeredAt * 1000).toLocaleDateString()}
                     </p>
                   )}
@@ -339,7 +314,7 @@ export default function AdminPage() {
         </ul>
       </section>
 
-      <p className="mt-10 text-center text-[11px] text-ink-600">
+      <p className="mt-10 text-center text-[11px] text-faint">
         Registry writes are admin-gated and signed server-side · Base Sepolia
       </p>
     </main>
@@ -347,11 +322,11 @@ export default function AdminPage() {
 }
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: "vital" | "critical" }) {
-  const color = tone === "vital" ? "text-vital" : tone === "critical" ? "text-critical" : "text-white";
+  const color = tone === "vital" ? "text-vital" : tone === "critical" ? "text-critical" : "text-text";
   return (
-    <div className="rounded-2xl border border-ink-800 bg-ink-900 px-4 py-3">
-      <p className={`text-2xl font-bold ${color}`}>{value}</p>
-      <p className="mt-0.5 text-[11px] font-medium tracking-wide text-ink-600 uppercase">{label}</p>
+    <div className="card px-4 py-3">
+      <p className={`font-display text-2xl font-bold tnum ${color}`}>{value}</p>
+      <p className="eyebrow mt-0.5">{label}</p>
     </div>
   );
 }
@@ -371,15 +346,13 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[11px] font-semibold tracking-wide text-ink-600 uppercase">
-        {label}
-      </span>
+      <span className="eyebrow mb-1.5 block">{label}</span>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         autoComplete="off"
-        className={`w-full rounded-lg border border-ink-700 bg-ink-950 px-4 py-3 text-sm text-white placeholder:text-ink-600 focus:border-implant focus:outline-none ${mono ? "font-mono" : ""}`}
+        className={`input ${mono ? "font-mono" : ""}`}
       />
     </label>
   );

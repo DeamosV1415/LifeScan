@@ -16,6 +16,7 @@ import {
 import { collectShares, challengeMessage, decryptRecord } from "@/lib/guardians";
 import { useProviderWallet } from "@/lib/useProviderWallet";
 import { DEMO_PATIENT_ID, type Tier1Record } from "@/lib/record";
+import { Wordmark, Eyebrow, PageShell } from "@/components/ui";
 
 /**
  * The break-glass flow — the centre of the demo.
@@ -133,43 +134,46 @@ function BreakGlassInner() {
   }, [address, getWalletClient, log, note, patientHash, reason, signMessage]);
 
   if (!ready) {
-    return <Shell><p className="text-ink-600">Loading…</p></Shell>;
+    return (
+      <PageShell>
+        <p className="text-muted">Loading…</p>
+      </PageShell>
+    );
   }
 
   if (!authenticated) {
     return (
-      <Shell>
-        <h1 className="text-2xl font-bold text-white">Provider access</h1>
-        <p className="mt-3 text-sm text-ink-600">
+      <PageShell>
+        <Wordmark />
+        <h1 className="mt-9 text-2xl font-bold text-text">Provider access</h1>
+        <p className="mt-3 text-sm leading-relaxed text-muted">
           Break-glass is restricted to registered clinicians. Sign in with your
           hospital email — a secure wallet is created for you, no seed phrase.
         </p>
-        <button
-          onClick={login}
-          className="mt-6 w-full rounded-xl bg-vital px-5 py-4 font-bold text-ink-950"
-        >
+        <button onClick={login} className="btn btn-vital btn-block mt-6">
           Sign in
         </button>
-      </Shell>
+      </PageShell>
     );
   }
 
   return (
-    <Shell>
+    <PageShell>
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold tracking-[0.2em] text-ink-600 uppercase">
-          Provider console
-        </span>
-        <span className="text-[11px] text-ink-600">{user?.email?.address}</span>
+        <Wordmark size="sm" />
+        <span className="font-mono text-[11px] text-faint">{user?.email?.address}</span>
       </div>
 
-      <h1 className="mt-4 text-2xl font-bold text-white">Break glass</h1>
-      <p className="mt-2 text-xs break-all text-ink-600">
-        Patient <span className="text-info">{patientId}</span> · {patientHash.slice(0, 18)}…
-      </p>
+      <div className="mt-7 rise">
+        <Eyebrow>Provider console</Eyebrow>
+        <h1 className="mt-2 text-2xl font-bold text-text">Break glass</h1>
+        <p className="mt-1.5 font-mono text-xs break-all text-faint">
+          Patient <span className="text-info">{patientId}</span> · {patientHash.slice(0, 18)}…
+        </p>
+      </div>
 
       {!hasWallet && (
-        <p className="mt-4 rounded-lg bg-caution/10 p-3 text-xs text-caution">
+        <p className="mt-4 rounded-xl border border-caution/30 bg-caution/10 p-3 text-xs text-caution">
           Preparing your secure wallet… if this persists, reload once.
         </p>
       )}
@@ -177,11 +181,11 @@ function BreakGlassInner() {
       {phase === "idle" || phase === "error" ? (
         <div className="mt-6 space-y-4">
           <label className="block">
-            <span className="text-xs font-semibold text-ink-600">Reason for access</span>
+            <span className="eyebrow">Reason for access</span>
             <select
               value={reason}
               onChange={(e) => setReason(Number(e.target.value))}
-              className="mt-1 w-full rounded-lg border border-ink-700 bg-ink-900 px-3 py-3 text-sm text-white"
+              className="input mt-1.5"
             >
               <option value={REASON_CODES.UNCONSCIOUS}>Unconscious patient</option>
               <option value={REASON_CODES.TRAUMA}>Trauma / RTA</option>
@@ -192,26 +196,24 @@ function BreakGlassInner() {
           </label>
 
           <label className="block">
-            <span className="text-xs font-semibold text-ink-600">
-              Clinical context (optional — its hash is anchored on-chain)
-            </span>
+            <span className="eyebrow">Clinical context — optional, its hash is anchored on-chain</span>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={2}
               placeholder="male ~35, RTA, GCS 9, BP 90/60"
-              className="mt-1 w-full rounded-lg border border-ink-700 bg-ink-900 px-3 py-2 text-sm text-white"
+              className="input mt-1.5 resize-none"
             />
           </label>
 
           <button
             onClick={breakGlass}
             disabled={!hasWallet}
-            className="w-full rounded-xl bg-critical px-5 py-5 text-lg font-black tracking-wide text-white uppercase disabled:opacity-40"
+            className="btn btn-danger btn-block py-5 text-lg tracking-wide uppercase"
           >
             🔴 Break glass
           </button>
-          <p className="text-center text-[11px] text-ink-600">
+          <p className="text-center text-[11px] text-faint">
             This access is permanent, attributable to you, and visible to the
             patient in real time.
           </p>
@@ -219,9 +221,22 @@ function BreakGlassInner() {
       ) : null}
 
       {trace.length > 0 && (
-        <ol className="mt-6 space-y-2 border-l border-ink-700 pl-4">
+        <ol className="mt-7 space-y-2.5 border-l border-line pl-4">
           {trace.map((entry, i) => (
-            <li key={i} className="text-sm">
+            <li key={i} className="relative text-sm">
+              <span
+                className="absolute top-1.5 -left-[1.3rem] size-2 rounded-full"
+                style={{
+                  background:
+                    entry.tone === "ok"
+                      ? "var(--vital)"
+                      : entry.tone === "warn"
+                        ? "var(--caution)"
+                        : entry.tone === "chain"
+                          ? "var(--info)"
+                          : "var(--faint)",
+                }}
+              />
               <span
                 className={
                   entry.tone === "ok"
@@ -230,18 +245,13 @@ function BreakGlassInner() {
                       ? "text-caution"
                       : entry.tone === "chain"
                         ? "text-info"
-                        : "text-ink-600"
+                        : "text-muted"
                 }
               >
                 {entry.text}
               </span>
               {entry.href && (
-                <a
-                  href={entry.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="ml-2 text-info underline"
-                >
+                <a href={entry.href} target="_blank" rel="noreferrer" className="link ml-2">
                   view on Basescan ↗
                 </a>
               )}
@@ -251,18 +261,21 @@ function BreakGlassInner() {
       )}
 
       {record && <RecordView record={record} />}
-    </Shell>
+    </PageShell>
   );
 }
 
 function RecordView({ record }: { record: Tier1Record }) {
   return (
-    <div className="mt-8 rounded-2xl border border-vital/30 bg-ink-900 p-5">
-      <p className="text-xs font-semibold tracking-widest text-vital uppercase">
+    <div
+      className="card mt-8 p-5 rise"
+      style={{ borderColor: "color-mix(in srgb, var(--vital) 30%, transparent)" }}
+    >
+      <p className="eyebrow" style={{ color: "var(--vital)" }}>
         Tier 1 · clinical record
       </p>
-      <h2 className="mt-2 text-xl font-bold text-white">{record.name}</h2>
-      <p className="text-sm text-ink-600">
+      <h2 className="mt-2 text-xl font-bold text-text">{record.name}</h2>
+      <p className="text-sm text-muted">
         {record.bloodGroup} · DOB {record.dob}
       </p>
 
@@ -281,7 +294,9 @@ function RecordView({ record }: { record: Tier1Record }) {
         items={record.implants.map((i) => `${i.type}${i.model ? ` (${i.model})` : ""}`)}
       />
       {record.notes && (
-        <p className="mt-4 rounded-lg bg-caution/10 p-3 text-sm text-caution">{record.notes}</p>
+        <p className="mt-4 rounded-xl border border-caution/30 bg-caution/10 p-3 text-sm text-caution">
+          {record.notes}
+        </p>
       )}
     </div>
   );
@@ -290,11 +305,11 @@ function RecordView({ record }: { record: Tier1Record }) {
 function Section({ title, items, alarming }: { title: string; items: string[]; alarming?: boolean }) {
   if (items.length === 0) return null;
   return (
-    <div className="mt-4">
-      <p className="text-[11px] font-semibold tracking-widest text-ink-600 uppercase">{title}</p>
-      <ul className="mt-1 space-y-0.5">
+    <div className="mt-4 border-t border-line pt-3">
+      <p className="eyebrow">{title}</p>
+      <ul className="mt-1.5 space-y-0.5">
         {items.map((item, i) => (
-          <li key={i} className={`text-sm ${alarming ? "font-semibold text-critical" : "text-white"}`}>
+          <li key={i} className={`text-sm ${alarming ? "font-semibold text-critical" : "text-text"}`}>
             {item}
           </li>
         ))}
@@ -303,13 +318,15 @@ function Section({ title, items, alarming }: { title: string; items: string[]; a
   );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
-  return <main className="mx-auto min-h-dvh w-full max-w-md px-5 py-10">{children}</main>;
-}
-
 export default function BreakGlassPage() {
   return (
-    <Suspense fallback={<Shell><p className="text-ink-600">Loading…</p></Shell>}>
+    <Suspense
+      fallback={
+        <PageShell>
+          <p className="text-muted">Loading…</p>
+        </PageShell>
+      }
+    >
       <BreakGlassInner />
     </Suspense>
   );
