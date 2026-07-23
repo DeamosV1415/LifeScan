@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "pnpm --filter @lifescan/web dev",
     "build": "pnpm --filter @lifescan/web build",
-    "test": "pnpm -r test"
+    "test": "pnpm -r test",
+    "reset": "node scripts/reset-demo.mjs"
   },
   "packageManager": "pnpm@10.12.4",
   "engines": {
