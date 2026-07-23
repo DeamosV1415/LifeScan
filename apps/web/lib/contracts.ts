@@ -76,6 +76,69 @@ export const REGISTRY_ABI = [
     inputs: [{ name: "provider", type: "address" }],
     outputs: [{ type: "bool" }],
   },
+  {
+    type: "function",
+    name: "admin",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "address" }],
+  },
+  {
+    type: "function",
+    name: "providerCount",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "providerAt",
+    stateMutability: "view",
+    inputs: [{ name: "index", type: "uint256" }],
+    outputs: [{ type: "address" }],
+  },
+  {
+    type: "function",
+    name: "getProvider",
+    stateMutability: "view",
+    inputs: [{ name: "provider", type: "address" }],
+    outputs: [
+      {
+        type: "tuple",
+        components: [
+          { name: "hfrId", type: "string" },
+          { name: "name", type: "string" },
+          { name: "active", type: "bool" },
+          { name: "registeredAt", type: "uint64" },
+        ],
+      },
+    ],
+  },
+  {
+    type: "function",
+    name: "registerProvider",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "provider", type: "address" },
+      { name: "hfrId", type: "string" },
+      { name: "name", type: "string" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "revokeProvider",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "provider", type: "address" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "reinstateProvider",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "provider", type: "address" }],
+    outputs: [],
+  },
 ] as const;
 
 export const ACCESS_LOG_ABI = [

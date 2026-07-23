@@ -96,6 +96,9 @@ export default function Home() {
           <Link href="/er" className="rounded-lg border border-ink-800 px-3 py-2 text-white transition hover:border-ink-700">
             ER · incoming board
           </Link>
+          <Link href="/admin" className="col-span-2 rounded-lg border border-implant/30 px-3 py-2 text-implant transition hover:border-implant/60">
+            Admin · onboard clinicians
+          </Link>
         </div>
       </div>
 
