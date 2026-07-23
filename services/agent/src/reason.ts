@@ -195,14 +195,16 @@ export async function runTriage(params: {
     if (name === "notify_emergency_contacts" && sms) {
       const c = args as { name?: string; phone?: string; message?: string };
       const result = await sms.send(c.phone ?? "", c.message ?? "LifeScan emergency alert.");
-      deliveredTo = result.to;
-      if (result.sent) {
-        emit("tool", `SMS delivered to ${c.name ?? "contact"} (${result.to})`);
-      } else if (!result.configured) {
-        emit("tool", `SMS not sent (Twilio not configured) — would notify ${result.to}`);
+      const numbers = result.recipients.map((r) => r.to).join(", ");
+      if (!result.configured) {
+        emit("tool", `SMS not sent (Twilio not configured) — would notify ${numbers}`);
       } else {
-        emit("error", `SMS to ${result.to} failed: ${result.error ?? "unknown error"}`);
+        for (const r of result.recipients) {
+          if (r.sent) emit("tool", `SMS delivered to ${r.to}`);
+          else emit("error", `SMS to ${r.to} failed: ${r.error ?? "unknown error"}`);
+        }
       }
+      deliveredTo = result.recipients.filter((r) => r.sent).map((r) => r.to).join(",") || undefined;
     }
 
     return JSON.stringify({ ok: true, anchored: txHash, ...(deliveredTo ? { smsTo: deliveredTo } : {}) });
