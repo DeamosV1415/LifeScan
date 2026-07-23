@@ -16,6 +16,31 @@
  * listed contact.
  */
 
+/**
+ * Turn the model's free-text alert into a scannable SMS: a header, one sentence
+ * per line, and a footer. SMS clients render newlines, and on a phone a short
+ * stack of lines reads far faster than one wrapped paragraph — which matters
+ * when the recipient is a panicked family member.
+ */
+export function formatEmergencySms(message: string): string {
+  const sentences = message
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const body = sentences.length > 0 ? sentences : ["A medical emergency alert has been issued."];
+
+  return [
+    "🚑 LifeScan · Emergency Alert",
+    "",
+    ...body,
+    "",
+    "Automated message — please do not reply.",
+  ].join("\n");
+}
+
 export interface SmsRecipientResult {
   to: string;
   sent: boolean;

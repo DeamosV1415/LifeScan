@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import { ACTION, type AgentChain } from "./chain.ts";
 import { priceUsage, formatCost, type CostBreakdown } from "./cost.ts";
 import { trace } from "./trace.ts";
-import type { SmsSender } from "./twilio.ts";
+import { formatEmergencySms, type SmsSender } from "./twilio.ts";
 
 /**
  * The reasoning loop: OpenAI decides which tools to call; each tool both takes
@@ -82,7 +82,11 @@ const tools = [
       properties: {
         name: { type: "string" },
         phone: { type: "string" },
-        message: { type: "string" },
+        message: {
+          type: "string",
+          description:
+            "A short, plain-language alert for the contact — 2-3 clear sentences: what happened, which hospital, and what to do. No jargon.",
+        },
       },
       required: ["name", "phone", "message"],
     },
@@ -194,7 +198,8 @@ export async function runTriage(params: {
     let deliveredTo: string | undefined;
     if (name === "notify_emergency_contacts" && sms) {
       const c = args as { name?: string; phone?: string; message?: string };
-      const result = await sms.send(c.phone ?? "", c.message ?? "LifeScan emergency alert.");
+      const body = formatEmergencySms(c.message ?? "A medical emergency alert has been issued.");
+      const result = await sms.send(c.phone ?? "", body);
       const numbers = result.recipients.map((r) => r.to).join(", ");
       if (!result.configured) {
         emit("tool", `SMS not sent (Twilio not configured) — would notify ${numbers}`);
