@@ -16,21 +16,43 @@ export function Wordmark({
   href?: string;
   plain?: boolean;
 }) {
-  const badge = size === "sm" ? "size-6 text-xs" : "size-7 text-sm";
-  const label = size === "sm" ? "text-xs" : "text-sm";
+  const badge = size === "sm" ? "size-6" : "size-7";
+  const label = size === "sm" ? "text-base" : "text-lg";
   const inner = (
     <span className="flex items-center gap-2">
       <span
-        className={`grid ${badge} place-items-center rounded-md font-black text-white shadow-sm`}
+        className={`grid ${badge} place-items-center rounded-md shadow-sm`}
         style={{
-          background: "linear-gradient(160deg, #ff6b7a 0%, var(--brand) 55%, #d43a4d 100%)",
+          background: "radial-gradient(125% 125% at 30% 18%, #16344c 0%, #0b1220 62%)",
+          border: "1px solid rgba(45, 212, 167, 0.28)",
         }}
       >
-        +
+        {/* Break-glass facet: a cut crystal fractured along a heartbeat — the
+            product's headline mechanic, in an "ink gem" jewel setting. */}
+        <svg viewBox="0 0 64 64" fill="none" aria-hidden="true" className="size-[72%]">
+          <defs>
+            <linearGradient id="ls-facet" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stopColor="#6ff2cd" />
+              <stop offset="0.5" stopColor="#2dd4a7" />
+              <stop offset="1" stopColor="#0f9c78" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M32 5 L49 18 L44 43 L32 59 L20 43 L15 18 Z"
+            stroke="url(#ls-facet)"
+            strokeWidth="4.2"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M16 32 L24 32 L27 23 L33 41 L36 32 L48 32"
+            stroke="url(#ls-facet)"
+            strokeWidth="4.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
       </span>
-      <span className={`font-display font-bold tracking-[0.22em] text-text uppercase ${label}`}>
-        LifeScan
-      </span>
+      <span className={`font-display font-medium tracking-tight text-text ${label}`}>LifeScan</span>
     </span>
   );
   if (plain) return inner;
@@ -43,6 +65,21 @@ export function Wordmark({
 
 export function Eyebrow({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return <p className={`eyebrow ${className}`}>{children}</p>;
+}
+
+/** Small amber pill marking the seeded demo patient wherever their card shows. */
+export function DemoTag() {
+  return (
+    <span
+      className="chip shrink-0"
+      style={{
+        background: "color-mix(in srgb, var(--caution) 16%, transparent)",
+        color: "var(--caution)",
+      }}
+    >
+      Demo
+    </span>
+  );
 }
 
 /** Live/connection pill with a pulsing dot. */

@@ -126,7 +126,13 @@ const server = http.createServer(async (req, res) => {
     return res.end();
   }
 
-  if (req.method === "GET" && url.pathname === "/health") {
+  // Liveness — GET *and* HEAD, on /health and / , so uptime monitors
+  // (UptimeRobot pings with HEAD by default) get a real 200 either way.
+  if ((req.method === "GET" || req.method === "HEAD") && (url.pathname === "/health" || url.pathname === "/")) {
+    if (req.method === "HEAD") {
+      res.writeHead(200, cors);
+      return res.end();
+    }
     res.writeHead(200, { "content-type": "application/json", ...cors });
     return res.end(JSON.stringify({ status: "ok", agent: chain.agentAddress, model: MODEL, effort: EFFORT }));
   }

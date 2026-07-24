@@ -51,7 +51,7 @@ function BreakGlassInner() {
     return HEX32.test(v) ? (v as `0x${string}`) : toPatientHash(v);
   }, [patientId]);
 
-  const { ready, authenticated, login, user } = usePrivy();
+  const { ready, authenticated, login } = usePrivy();
   const { address, getWalletClient, signMessage, hasWallet } = useProviderWallet();
 
   const [phase, setPhase] = useState<Phase>("idle");
@@ -170,10 +170,7 @@ function BreakGlassInner() {
 
   return (
     <PageShell>
-      <div className="flex items-center justify-between">
-        <Wordmark size="sm" />
-        <span className="font-mono text-[11px] text-faint">{user?.email?.address}</span>
-      </div>
+      <Wordmark size="sm" />
 
       <div className="mt-7 rise">
         <Eyebrow>Provider console</Eyebrow>

@@ -25,6 +25,14 @@ export interface IndexedCard {
   id: string;
   name: string;
   bloodGroup: string;
+  /**
+   * The full Tier-0 card URL. Stored so the card is retrievable (copy / write to
+   * a tag) from any browser the patient logs into — not just the issuing device.
+   * Note: this URL's fragment carries the Tier-0 payload, so storing it here is a
+   * deliberate convenience tradeoff. The offline scan path still never transmits
+   * the fragment; only this opt-in card-management list holds it.
+   */
+  url?: string;
   createdAt: number;
 }
 

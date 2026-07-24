@@ -30,6 +30,13 @@ export const metadata: Metadata = {
   description:
     "Instant emergency medical identity. Works offline, on any phone, with on-chain accountability for every access.",
   manifest: "/manifest.json",
+  // The tab favicon: browsers do NOT use the manifest icons for the tab, so it
+  // must be declared here explicitly. SVG favicon — supported in every modern
+  // browser (Chrome/Edge/Firefox/Safari).
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/icon.svg" }],
+  },
   appleWebApp: {
     capable: true,
     title: "LifeScan",

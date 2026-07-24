@@ -32,6 +32,9 @@ export interface Tier1Record {
  */
 export const DEMO_PATIENT_ID = "ramesh-kumar-1989";
 
+/** Card flags for the demo patient's Tier-0 payload — pacemaker + anticoagulant. */
+export const DEMO_FLAGS = ["PACEMAKER", "ANTICOAGULANT"];
+
 export const DEMO_RECORD: Tier1Record = {
   name: "Ramesh Kumar",
   dob: "1989-03-14",

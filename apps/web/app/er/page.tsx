@@ -94,7 +94,7 @@ export default function ErDashboard() {
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-3xl px-5 py-8 sm:px-6">
-      <header className="flex items-center justify-between gap-4">
+      <header className="flex items-center justify-between gap-4 pr-12 sm:pr-0">
         <div>
           <Wordmark size="sm" />
           <h1 className="mt-3 text-xl font-bold text-text">Emergency Department</h1>

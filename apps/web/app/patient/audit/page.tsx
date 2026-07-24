@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import {
   ACCESS_LOG_ABI,
@@ -14,7 +14,8 @@ import {
 } from "@/lib/contracts";
 import { useProviderWallet } from "@/lib/useProviderWallet";
 import { DEMO_PATIENT_ID } from "@/lib/record";
-import { Wordmark, Eyebrow, LivePill, PageShell } from "@/components/ui";
+import { usePatientCards } from "@/lib/patient-cards";
+import { Wordmark, Eyebrow, LivePill, PageShell, DemoTag } from "@/components/ui";
 
 /**
  * The patient's audit view — the accountability half of the pitch, made visible.
@@ -34,11 +35,23 @@ interface Access {
 }
 
 export default function PatientAuditPage() {
-  const { ready, authenticated, login } = usePrivy();
+  const { ready, authenticated, login, user } = usePrivy();
   const { address, getWalletClient, hasWallet } = useProviderWallet();
 
-  const patientId = DEMO_PATIENT_ID;
-  const patientHash = toPatientHash(patientId);
+  // Which patient's log we're viewing. Defaults to the demo patient; a
+  // ?patient=<id> deep-link (from the /patient hub) pre-selects another. Read in
+  // an effect, not the initial state, so the server and first client render
+  // agree (window is undefined during SSR).
+  const email = user?.email?.address ?? "";
+  const { cards } = usePatientCards(email);
+  const [selectedId, setSelectedId] = useState<string>(DEMO_PATIENT_ID);
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get("patient");
+    if (p) setSelectedId(p);
+  }, []);
+  const patientId = selectedId;
+  const patientHash = useMemo(() => toPatientHash(selectedId), [selectedId]);
+  const selected = cards.find((c) => c.id === selectedId);
 
   const [history, setHistory] = useState<Access[]>([]);
   const [frozen, setFrozen] = useState(false);
@@ -182,11 +195,34 @@ export default function PatientAuditPage() {
   return (
     <PageShell>
       <Wordmark />
-      <div className="mt-8 rise">
+
+      <label className="mt-7 block rise">
+        <span className="eyebrow mb-1.5 block">Viewing patient</span>
+        <select
+          value={selectedId}
+          onChange={(e) => setSelectedId(e.target.value)}
+          className="input"
+        >
+          {cards.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name} · {c.bloodGroup}
+              {c.demo ? " — Demo" : ""}
+            </option>
+          ))}
+          {!cards.some((c) => c.id === selectedId) && (
+            <option value={selectedId}>{selectedId}</option>
+          )}
+        </select>
+      </label>
+
+      <div className="mt-6 rise">
         <Eyebrow>Patient · access log</Eyebrow>
         <div className="mt-2 flex items-center justify-between gap-3">
           <h1 className="text-2xl font-bold text-text">Who touched my record</h1>
-          <LivePill live label="live" />
+          <div className="flex shrink-0 items-center gap-2">
+            {selected?.demo && <DemoTag />}
+            <LivePill live label="live" />
+          </div>
         </div>
         <p className="mt-1.5 font-mono text-xs break-all text-faint">
           {patientId} · {patientHash.slice(0, 18)}…

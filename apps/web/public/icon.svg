@@ -1,12 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="cross" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ff6b7a"/>
-      <stop offset="0.55" stop-color="#fb5468"/>
-      <stop offset="1" stop-color="#d43a4d"/>
+    <radialGradient id="tile" cx="30%" cy="18%" r="125%">
+      <stop offset="0" stop-color="#16344c"/>
+      <stop offset="0.62" stop-color="#0b1220"/>
+    </radialGradient>
+    <linearGradient id="facet" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6ff2cd"/>
+      <stop offset="0.5" stop-color="#2dd4a7"/>
+      <stop offset="1" stop-color="#0f9c78"/>
     </linearGradient>
   </defs>
-  <rect width="512" height="512" rx="112" fill="#090d16"/>
-  <rect x="216" y="104" width="80" height="304" rx="18" fill="url(#cross)"/>
-  <rect x="104" y="216" width="304" height="80" rx="18" fill="url(#cross)"/>
+  <rect width="512" height="512" rx="112" fill="url(#tile)"/>
+  <rect x="4" y="4" width="504" height="504" rx="108" fill="none" stroke="#2dd4a7" stroke-opacity="0.28" stroke-width="6"/>
+  <g fill="none" stroke="url(#facet)" stroke-linejoin="round" stroke-linecap="round">
+    <!-- cut crystal -->
+    <path stroke-width="26" d="M256 40 L400 144 L360 344 L256 472 L152 344 L112 144 Z"/>
+    <!-- facet cuts -->
+    <path stroke-width="20" opacity="0.5" d="M112 144 L256 216 L400 144"/>
+    <path stroke-width="20" opacity="0.5" d="M152 344 L256 216 L360 344"/>
+    <!-- heartbeat fracture -->
+    <path stroke-width="30" d="M120 256 L200 256 L228 184 L280 344 L308 256 L392 256"/>
+  </g>
 </svg>

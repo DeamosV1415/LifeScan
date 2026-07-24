@@ -18,6 +18,7 @@ import type { Tier1Record } from "@/lib/record";
 import { Wordmark, Eyebrow, PageShell } from "@/components/ui";
 import { FundButton } from "@/components/FundButton";
 import { Collapsible } from "@/components/Collapsible";
+import { CopyButton } from "@/components/CopyButton";
 
 /**
  * Create-your-own patient. The same seal → mirror → distribute → claim pipeline
@@ -30,30 +31,6 @@ type Phase = "form" | "sealing" | "done" | "error";
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const FLAG_KEYS = Object.keys(FLAG_LABELS);
-const CARDS_KEY = "lifescan.myCards";
-
-interface IssuedCard {
-  id: string;
-  name: string;
-  bloodGroup: string;
-  /** The full Tier-0 card URL — only present on the device that issued it. */
-  url?: string;
-  createdAt: number;
-}
-
-/**
- * Merge two card lists by id, newest first, preferring whichever copy carries a
- * URL (the local one) so an email-synced entry doesn't drop a URL we already
- * have on this device.
- */
-function mergeCards(a: IssuedCard[], b: IssuedCard[]): IssuedCard[] {
-  const byId = new Map<string, IssuedCard>();
-  for (const c of [...a, ...b]) {
-    const existing = byId.get(c.id);
-    byId.set(c.id, existing ? { ...c, url: c.url ?? existing.url } : c);
-  }
-  return [...byId.values()].sort((x, y) => y.createdAt - x.createdAt);
-}
 
 interface FormState {
   name: string;
@@ -106,31 +83,6 @@ export default function NewPatientPage() {
   const [steps, setSteps] = useState<string[]>([]);
   const [cardUrl, setCardUrl] = useState("");
   const [error, setError] = useState("");
-  const [cards, setCards] = useState<IssuedCard[]>([]);
-  const [copied, setCopied] = useState(false);
-
-  // Cards are tracked in two places that get merged: localStorage (holds the
-  // full Tier-0 card URL, which never leaves the issuing device) and an
-  // email-linked server index (holds only id + name + blood group, so the list
-  // follows the login across browsers). The server copy is what lets you find a
-  // card you made in another browser; the local copy is what still has its URL.
-  useEffect(() => {
-    let local: IssuedCard[] = [];
-    try {
-      local = JSON.parse(localStorage.getItem(CARDS_KEY) ?? "[]");
-    } catch {
-      /* ignore corrupt storage */
-    }
-    setCards(local);
-
-    if (!email) return;
-    fetch(`/api/my-cards?email=${encodeURIComponent(email)}`)
-      .then((r) => (r.ok ? r.json() : { cards: [] }))
-      .then(({ cards: server }: { cards: IssuedCard[] }) =>
-        setCards(mergeCards(local, server ?? [])),
-      )
-      .catch(() => {});
-  }, [email]);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setF((prev) => ({ ...prev, [key]: value }));
@@ -224,29 +176,15 @@ export default function NewPatientPage() {
       const url = `${origin}/s/${patientId}#${fragment}`;
       setCardUrl(url);
 
-      // Keep the card on this device (with its URL) so it's retrievable later…
-      const issued: IssuedCard = {
-        id: patientId,
-        name: record.name,
-        bloodGroup: record.bloodGroup,
-        url,
-        createdAt: Date.now(),
-      };
-      setCards((prev) => {
-        const next = mergeCards([issued], prev);
-        localStorage.setItem(CARDS_KEY, JSON.stringify(next));
-        return next;
-      });
-
-      // …and register it against the login email so it shows up in any browser
-      // (without the URL — that offline payload never leaves this device).
+      // Register the card against the login email so it appears on the patient
+      // hub (/patient) in any browser this account signs into.
       if (email) {
         fetch("/api/my-cards", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
             email,
-            card: { id: patientId, name: record.name, bloodGroup: record.bloodGroup, createdAt: issued.createdAt },
+            card: { id: patientId, name: record.name, bloodGroup: record.bloodGroup, url, createdAt: Date.now() },
           }),
         }).catch(() => {});
       }
@@ -295,51 +233,6 @@ export default function NewPatientPage() {
       </div>
 
       {address && <FundButton address={address} />}
-
-      {cards.length > 0 && (
-        <section className="card mt-6 p-4 sm:p-5">
-          <Eyebrow>Your issued cards</Eyebrow>
-          <p className="mt-1 text-xs text-muted">
-            Linked to {email || "your login"}, so they follow you across browsers.
-            The card URL only exists on the device that created it — cards synced
-            from elsewhere show id and Break glass only.
-          </p>
-          <ul className="mt-3 space-y-3">
-            {cards.map((c) => (
-              <li key={c.id} className="rounded-xl border border-line p-3">
-                <p className="text-sm font-semibold text-text">
-                  {c.name} <span className="text-muted">· {c.bloodGroup}</span>
-                </p>
-                <p className="mt-0.5 font-mono text-[11px] break-all text-faint">id {c.id}</p>
-                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
-                  {c.url && (
-                    <>
-                      <a href={c.url} target="_blank" rel="noreferrer" className="link">
-                        Preview card →
-                      </a>
-                      <button
-                        onClick={() => navigator.clipboard?.writeText(c.url!)}
-                        className="text-info hover:underline"
-                      >
-                        Copy card URL
-                      </button>
-                    </>
-                  )}
-                  <button
-                    onClick={() => navigator.clipboard?.writeText(c.id)}
-                    className="text-info hover:underline"
-                  >
-                    Copy id
-                  </button>
-                  <a href={`/provider/break-glass?patient=${c.id}`} className="text-info hover:underline">
-                    Break glass →
-                  </a>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
 
       {phase === "form" || phase === "error" ? (
         <div className="mt-8 space-y-8">
@@ -556,16 +449,7 @@ export default function NewPatientPage() {
               <span className="eyebrow">Card URL</span>
               <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-line bg-[var(--field)] p-2 pl-3">
                 <code className="min-w-0 flex-1 truncate font-mono text-xs text-muted">{cardUrl}</code>
-                <button
-                  onClick={() => {
-                    navigator.clipboard?.writeText(cardUrl);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 1500);
-                  }}
-                  className="chip chip-muted shrink-0 hover:text-text"
-                >
-                  {copied ? "Copied ✓" : "Copy"}
-                </button>
+                <CopyButton text={cardUrl} className="shrink-0" />
               </div>
             </div>
 
@@ -581,8 +465,8 @@ export default function NewPatientPage() {
 
             <p className="text-[11px] leading-relaxed text-faint">
               Write this URL to an NFC tag to make a physical card. It&apos;s also
-              saved under <span className="text-muted">Your issued cards</span> above,
-              on this device and your login.
+              saved to <a href="/patient" className="link">Your cards</a>, linked to
+              your login.
             </p>
           </div>
         </div>

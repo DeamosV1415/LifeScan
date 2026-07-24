@@ -225,7 +225,7 @@ button:disabled,
     transition: transform 0.08s ease, filter 0.15s ease, background 0.15s ease, border-color 0.15s ease;
   }
   .btn:active:not(:disabled) {
-    transform: translateY(1px);
+    transform: scale(0.972);
   }
   .btn:disabled {
     opacity: 0.4;
@@ -331,6 +331,197 @@ button:disabled,
   }
   .shadow-pop {
     box-shadow: var(--shadow-pop);
+  }
+}
+
+/* ---- Touch / phone niceties ---- */
+/* Kill the grey flash on tap; we provide our own press feedback. */
+a,
+button,
+[role="button"],
+summary,
+label[for],
+.chip,
+.copybtn {
+  -webkit-tap-highlight-color: transparent;
+}
+/* A quick, tactile press on any link/chip on touch — matches the buttons. */
+a:active,
+.chip:active {
+  transform: scale(0.97);
+}
+a,
+.chip {
+  transition: transform 0.1s ease, color 0.15s ease;
+}
+/* Clear the phone home-bar / notch on full-bleed screens. */
+@supports (padding: max(0px, env(safe-area-inset-bottom))) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* ---- Account / profile tab (fixed, phone-first) ---- */
+.account-menu {
+  position: fixed;
+  /* Aligned to the page wordmark's vertical centre (PageShell py-10 = 2.5rem
+     top + half the size-7 badge), so the avatar sits on the same line as the
+     LIFESCAN mark rather than floating above it. Matches the content's right
+     gutter, not the very viewport edge. */
+  top: 2.15rem;
+  right: 1rem;
+  z-index: 60;
+}
+.account-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.12s ease;
+}
+.account-trigger:active {
+  transform: scale(0.92);
+}
+.account-avatar {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #04150f;
+  background: linear-gradient(150deg, var(--vital), color-mix(in srgb, var(--info) 65%, var(--vital)));
+  box-shadow:
+    0 2px 12px -2px color-mix(in srgb, var(--vital) 55%, transparent),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+.account-signin {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 0.5rem 0.9rem;
+  backdrop-filter: blur(8px);
+}
+.account-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(82vw, 270px);
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  padding: 0.95rem;
+  box-shadow: var(--shadow-pop);
+  transform-origin: top right;
+  animation: ls-pop 0.16s ease both;
+}
+@keyframes ls-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(-4px);
+  }
+}
+.account-pop-label {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--faint);
+  font-weight: 700;
+}
+.account-pop-email {
+  margin-top: 0.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--text);
+  word-break: break-all;
+  line-height: 1.4;
+}
+.account-signout {
+  margin-top: 0.85rem;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  border-radius: 10px;
+  padding: 0.62rem;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.account-signout:active {
+  transform: scale(0.97);
+}
+.account-signout:hover {
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
+}
+
+/* ---- Animated copy button ---- */
+.copybtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--info);
+  border: 1px solid var(--line-strong);
+  background: var(--field);
+  border-radius: 999px;
+  padding: 0.42rem 0.85rem;
+  line-height: 1;
+  user-select: none;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, transform 0.12s ease;
+}
+.copybtn:active {
+  transform: scale(0.93);
+}
+.copybtn .copybtn-ic {
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  position: relative;
+}
+.copybtn .copybtn-ic svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transition: opacity 0.2s ease, transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.35);
+}
+.copybtn .ic-check {
+  opacity: 0;
+  transform: scale(0.3) rotate(-25deg);
+}
+.copybtn.is-copied {
+  color: var(--vital);
+  border-color: color-mix(in srgb, var(--vital) 45%, transparent);
+  background: color-mix(in srgb, var(--vital) 12%, transparent);
+}
+.copybtn.is-copied .ic-copy {
+  opacity: 0;
+  transform: scale(0.3) rotate(20deg);
+}
+.copybtn.is-copied .ic-check {
+  opacity: 1;
+  transform: scale(1) rotate(0);
+}
+.copybtn.is-copied .copybtn-label {
+  animation: ls-copied-pop 0.35s ease;
+}
+@keyframes ls-copied-pop {
+  40% {
+    transform: translateY(-1px) scale(1.06);
   }
 }
 

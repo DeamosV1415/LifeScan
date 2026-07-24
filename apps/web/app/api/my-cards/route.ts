@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
     id: card.id,
     name: card.name,
     bloodGroup: card.bloodGroup,
+    url: typeof card.url === "string" ? card.url : undefined,
     createdAt: typeof card.createdAt === "number" ? card.createdAt : Date.now(),
   });
   return NextResponse.json({ cards });

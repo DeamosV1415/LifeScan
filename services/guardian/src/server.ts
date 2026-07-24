@@ -70,7 +70,13 @@ export function createGuardianServer({ id, chain, shares, nonces }: GuardianDeps
     try {
       if (req.method === "OPTIONS") return send(res, 204, {});
 
-      if (req.method === "GET" && url.pathname === "/health") {
+      // Liveness — answer GET *and* HEAD, on /health and / , so uptime monitors
+      // (UptimeRobot pings with HEAD by default) get a real 200 either way.
+      if ((req.method === "GET" || req.method === "HEAD") && (url.pathname === "/health" || url.pathname === "/")) {
+        if (req.method === "HEAD") {
+          res.writeHead(200, { "access-control-allow-origin": "*" });
+          return res.end();
+        }
         return send(res, 200, {
           guardian: id,
           status: "ok",

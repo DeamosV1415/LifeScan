@@ -2,6 +2,7 @@
 
 import { PrivyProvider } from "@privy-io/react-auth";
 import { baseSepolia } from "viem/chains";
+import { AccountMenu } from "@/components/AccountMenu";
 
 /**
  * Privy gives clinicians an embedded wallet from an email login — no seed
@@ -28,6 +29,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         defaultChain: baseSepolia,
       }}
     >
+      <AccountMenu />
       {children}
     </PrivyProvider>
   );
