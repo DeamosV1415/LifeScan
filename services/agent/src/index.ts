@@ -8,13 +8,20 @@ import { runTriage } from "./reason.ts";
 import { createSmsSender } from "./twilio.ts";
 import { trace } from "./trace.ts";
 
-// Load repo-root .env.local.
-for (const line of fs.readFileSync(path.resolve(import.meta.dirname, "../../../.env.local"), "utf8").split("\n")) {
-  const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
-  if (m && !process.env[m[1]]) process.env[m[1]] = m[2].trim();
+// Load repo-root .env.local when it exists (local dev). On a deployed host like
+// Render the env comes from the dashboard and no such file exists — so treat it
+// as optional and fall back to process.env, rather than crashing on boot.
+try {
+  for (const line of fs.readFileSync(path.resolve(import.meta.dirname, "../../../.env.local"), "utf8").split("\n")) {
+    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].trim();
+  }
+} catch {
+  /* no .env.local on a deployed host — rely on process.env */
 }
 
-const PORT = Number(process.env.AGENT_PORT || 4100);
+// Render (and most PaaS) inject the port to bind as PORT; honour it first.
+const PORT = Number(process.env.PORT || process.env.AGENT_PORT || 4100);
 const MODEL = process.env.OPENAI_MODEL ?? "gpt-5.6-luna";
 const EFFORT = (process.env.OPENAI_REASONING_EFFORT ?? "low") as "minimal" | "low" | "medium" | "high";
 const GUARDIANS = (process.env.NEXT_PUBLIC_GUARDIAN_URLS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
