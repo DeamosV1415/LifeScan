@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Wordmark, Eyebrow, LivePill } from "@/components/ui";
+import { Collapsible } from "@/components/Collapsible";
 
 /**
  * The ER dashboard — the receiving hospital's screen.
@@ -40,6 +41,8 @@ interface PreAuth {
   provisionalDiagnosis: string;
   estimatedAmountInr: number;
   itemization: string[];
+  /** The patient's actual policy, forwarded from the decrypted record. */
+  policy?: { provider?: string; policyNo?: string; sumInsured?: string };
 }
 
 const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL ?? "http://localhost:4100";
@@ -115,7 +118,7 @@ export default function ErDashboard() {
 
       {triage && (
         <section
-          className={`mt-6 rounded-2xl border p-5 shadow-card rise ${
+          className={`mt-6 rounded-2xl border p-4 shadow-card rise sm:p-5 ${
             active ? "border-caution/50" : "border-vital/30"
           }`}
           style={{
@@ -124,7 +127,7 @@ export default function ErDashboard() {
               : "var(--surface)",
           }}
         >
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-start justify-between gap-3">
             <p
               className="eyebrow flex items-center gap-2"
               style={{ color: active ? "var(--caution)" : "var(--vital)" }}
@@ -132,94 +135,125 @@ export default function ErDashboard() {
               {active && <span className="size-2 rounded-full bg-caution live-dot" />}
               {active ? "Incoming — triage in progress" : "Incoming patient"}
             </p>
-            <span className="font-display text-3xl font-bold text-critical tnum">{triage.bloodGroup}</span>
+            <span className="font-display text-4xl leading-none font-bold text-critical tnum">
+              {triage.bloodGroup}
+            </span>
           </div>
 
           {triage.contraindications.length > 0 && (
-            <div className="mt-4 rounded-xl border border-critical/30 bg-critical/10 p-4">
+            <div className="mt-4 rounded-xl border border-critical/30 bg-critical/10 p-3.5">
               <p className="eyebrow" style={{ color: "var(--danger)" }}>
                 ⚠ Contraindications — act on these first
               </p>
-              <ul className="mt-2 space-y-1">
+              <ul className="mt-2.5 space-y-2.5">
                 {triage.contraindications.map((c, i) => (
-                  <li key={i} className="text-sm font-semibold text-critical">
-                    {c}
+                  <li key={i} className="flex gap-2 text-sm leading-relaxed font-semibold text-critical">
+                    <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-critical" />
+                    <span>{c}</span>
                   </li>
                 ))}
               </ul>
             </div>
           )}
 
-          <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+          <div className="mt-4 grid grid-cols-1 gap-x-5 gap-y-4 text-sm sm:grid-cols-2">
             <Field label="Critical allergies" items={triage.criticalAllergies} tone="critical" />
             <Field label="Interactions" items={triage.interactions} />
             <Field label="Implant cautions" items={triage.implantCautions} />
           </div>
-
-          {sbar && (
-            <div className="mt-5 border-t border-line pt-4">
-              <Eyebrow className="!text-info">SBAR handoff</Eyebrow>
-              <dl className="mt-2.5 space-y-1.5 text-sm">
-                <SbarLine k="S" label="Situation" v={sbar.situation} />
-                <SbarLine k="B" label="Background" v={sbar.background} />
-                <SbarLine k="A" label="Assessment" v={sbar.assessment} />
-                <SbarLine k="R" label="Recommendation" v={sbar.recommendation} />
-              </dl>
-            </div>
-          )}
-
-          {preauth && (
-            <div className="mt-5 border-t border-line pt-4">
-              <div className="flex items-center justify-between gap-2">
-                <Eyebrow className="!text-info">Insurance pre-auth · prepared</Eyebrow>
-                <span className="chip chip-info">awaiting human release</span>
-              </div>
-              <div className="mt-2 flex items-baseline justify-between gap-3">
-                <p className="text-sm text-text">{preauth.provisionalDiagnosis}</p>
-                <p className="font-display text-lg font-bold text-text tnum">
-                  ₹{preauth.estimatedAmountInr.toLocaleString("en-IN")}
-                </p>
-              </div>
-              {preauth.itemization.length > 0 && (
-                <ul className="mt-2 space-y-0.5 text-xs text-muted">
-                  {preauth.itemization.map((it, i) => (
-                    <li key={i}>· {it}</li>
-                  ))}
-                </ul>
-              )}
-              <p className="mt-2 text-[11px] text-faint">
-                The agent prepared and anchored this packet. Funds are released by
-                a human admin — never the agent.
-              </p>
-            </div>
-          )}
         </section>
       )}
 
-      <section className="mt-6">
-        <Eyebrow>Agent trace · live</Eyebrow>
-        <div
-          ref={feedRef}
-          className="mt-2 max-h-72 overflow-y-auto rounded-xl border border-line bg-bg-2 p-4 font-mono text-xs"
-        >
-          {events.length === 0 ? (
-            <p className="text-faint">No activity yet.</p>
-          ) : (
-            <ol className="space-y-1.5">
-              {events.map((e, i) => (
-                <li key={i} className={KIND_STYLE[e.kind]}>
-                  <span className="text-faint">[{e.kind}]</span> {e.text}
-                  {e.href && (
-                    <a href={e.href} target="_blank" rel="noreferrer" className="ml-2 text-info underline">
-                      tx ↗
-                    </a>
-                  )}
-                </li>
-              ))}
-            </ol>
-          )}
+      {sbar && (
+        <div className="mt-4">
+          <Collapsible title="SBAR handoff" accent="var(--info)" defaultOpen>
+            <dl className="space-y-2.5 pt-1 text-sm">
+              <SbarLine k="S" label="Situation" v={sbar.situation} />
+              <SbarLine k="B" label="Background" v={sbar.background} />
+              <SbarLine k="A" label="Assessment" v={sbar.assessment} />
+              <SbarLine k="R" label="Recommendation" v={sbar.recommendation} />
+            </dl>
+          </Collapsible>
         </div>
-      </section>
+      )}
+
+      {preauth && (
+        <section className="card mt-4 p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Eyebrow className="!text-info">Insurance pre-auth · prepared</Eyebrow>
+            <span className="chip chip-info">awaiting human release</span>
+          </div>
+          <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+            <p className="text-sm text-text">{preauth.provisionalDiagnosis}</p>
+            <div className="text-right">
+              <p className="eyebrow">Est. claim</p>
+              <p className="font-display text-xl font-bold text-text tnum">
+                ₹{preauth.estimatedAmountInr.toLocaleString("en-IN")}
+              </p>
+            </div>
+          </div>
+
+          {preauth.policy && (preauth.policy.provider || preauth.policy.sumInsured || preauth.policy.policyNo) && (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-[var(--field)] px-3 py-2 text-xs">
+              <span className="text-muted">
+                {preauth.policy.provider || "Policy"}
+                {preauth.policy.policyNo && (
+                  <span className="ml-1.5 font-mono text-faint">· {preauth.policy.policyNo}</span>
+                )}
+              </span>
+              {preauth.policy.sumInsured && (
+                <span className="text-text">
+                  <span className="text-faint">cover </span>
+                  <span className="font-semibold text-vital">{preauth.policy.sumInsured}</span>
+                </span>
+              )}
+            </div>
+          )}
+
+          {preauth.itemization.length > 0 && (
+            <ul className="mt-2.5 space-y-1 text-xs text-muted">
+              {preauth.itemization.map((it, i) => (
+                <li key={i}>· {it}</li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-3 text-[11px] leading-relaxed text-faint">
+            The agent prepared and anchored this packet. Funds are released by a
+            human admin — never the agent.
+          </p>
+        </section>
+      )}
+
+      <div className="mt-4">
+        <Collapsible
+          title="Agent trace · live"
+          live={connected}
+          meta={<span className="text-[11px] text-faint tnum">{events.length}</span>}
+          defaultOpen
+        >
+          <div
+            ref={feedRef}
+            className="max-h-72 overflow-y-auto rounded-xl border border-line bg-bg-2 p-3.5 font-mono text-xs"
+          >
+            {events.length === 0 ? (
+              <p className="text-faint">No activity yet.</p>
+            ) : (
+              <ol className="space-y-1.5">
+                {events.map((e, i) => (
+                  <li key={i} className={`leading-relaxed ${KIND_STYLE[e.kind]}`}>
+                    <span className="text-faint">[{e.kind}]</span> {e.text}
+                    {e.href && (
+                      <a href={e.href} target="_blank" rel="noreferrer" className="ml-2 text-info underline">
+                        tx ↗
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
+        </Collapsible>
+      </div>
     </main>
   );
 }

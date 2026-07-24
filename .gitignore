@@ -27,3 +27,6 @@ pnpm-debug.log*
 
 # Runtime record mirror
 .data/
+
+# TypeScript incremental build cache
+*.tsbuildinfo

@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { redis } from "./redis";
 
 /**
  * Server-side mirror of Tier-1 ciphertext.
@@ -9,9 +10,13 @@ import path from "node:path";
  * ciphertext for availability costs the patient no privacy, because opening it
  * still requires two Guardians to independently approve.
  *
- * File-backed so it is inspectable and survives a restart. On an ephemeral
- * serverless filesystem it falls back to the committed seed (see seed/), so the
- * demo patient is always retrievable even from a cold instance.
+ * Two backends behind one interface:
+ *   • Upstash Redis (a single "records" hash) when configured — the durable
+ *     store used on Vercel/Render, where the filesystem is ephemeral.
+ *   • A local JSON file otherwise — inspectable, zero-dependency, used for the
+ *     on-stage demo and local dev.
+ * The committed seed (seed/records.json) is always merged in for reads, so the
+ * demo patient is retrievable even from a cold instance with an empty store.
  */
 
 export interface StoredRecord {
@@ -25,6 +30,7 @@ export interface StoredRecord {
 const DATA_DIR = process.env.RECORD_STORE_DIR ?? path.resolve(process.cwd(), ".data");
 const STORE_FILE = path.join(DATA_DIR, "records.json");
 const SEED_FILE = path.resolve(process.cwd(), "seed/records.json");
+const REDIS_KEY = "records";
 
 function readFile(file: string): Record<string, StoredRecord> {
   try {
@@ -34,18 +40,35 @@ function readFile(file: string): Record<string, StoredRecord> {
   }
 }
 
-function load(): Record<string, StoredRecord> {
-  // Seed first, then overlay any runtime writes.
-  return { ...readFile(SEED_FILE), ...readFile(STORE_FILE) };
+function seedRecord(patientHash: string): StoredRecord | undefined {
+  return readFile(SEED_FILE)[patientHash.toLowerCase()];
 }
 
-export function putRecord(record: Omit<StoredRecord, "updatedAt">): void {
+export async function putRecord(record: Omit<StoredRecord, "updatedAt">): Promise<void> {
+  const key = record.patientHash.toLowerCase();
+  const value: StoredRecord = { ...record, patientHash: key, updatedAt: Date.now() };
+
+  const r = redis();
+  if (r) {
+    await r.hset(REDIS_KEY, { [key]: value });
+    return;
+  }
+
   fs.mkdirSync(DATA_DIR, { recursive: true });
   const all = readFile(STORE_FILE);
-  all[record.patientHash.toLowerCase()] = { ...record, updatedAt: Date.now() };
+  all[key] = value;
   fs.writeFileSync(STORE_FILE, JSON.stringify(all, null, 2));
 }
 
-export function getRecord(patientHash: string): StoredRecord | undefined {
-  return load()[patientHash.toLowerCase()];
+export async function getRecord(patientHash: string): Promise<StoredRecord | undefined> {
+  const key = patientHash.toLowerCase();
+
+  const r = redis();
+  if (r) {
+    const hit = await r.hget<StoredRecord>(REDIS_KEY, key);
+    return hit ?? seedRecord(key);
+  }
+
+  // Seed first, then overlay any runtime writes.
+  return { ...readFile(SEED_FILE), ...readFile(STORE_FILE) }[key];
 }

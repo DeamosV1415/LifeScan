@@ -17,6 +17,7 @@ import { buildTier0 } from "@/lib/tier0";
 import { DEMO_PATIENT_ID, DEMO_RECORD } from "@/lib/record";
 import { Wordmark, Eyebrow, PageShell } from "@/components/ui";
 import { FundButton } from "@/components/FundButton";
+import { Collapsible } from "@/components/Collapsible";
 
 /**
  * The patient side: seal a clinical record and issue a card.
@@ -178,21 +179,30 @@ export default function PatientPage() {
       ) : null}
 
       {steps.length > 0 && (
-        <ol className="mt-6 space-y-3">
-          {steps.map((s, i) => {
-            const last = i === steps.length - 1;
-            const working = phase === "sealing" && last;
-            return (
-              <li key={i} className="flex gap-3 text-sm">
-                <span
-                  className={`mt-1.5 size-2 shrink-0 rounded-full ${working ? "bg-vital live-dot" : "bg-vital"}`}
-                  style={!working && phase === "sealing" ? { background: "var(--faint)" } : undefined}
-                />
-                <span className={last && phase !== "sealing" ? "text-text" : "text-muted"}>{s}</span>
-              </li>
-            );
-          })}
-        </ol>
+        <div className="mt-6">
+          <Collapsible
+            title="Seal progress"
+            live={phase === "sealing"}
+            meta={<span className="text-[11px] text-faint tnum">{steps.length}</span>}
+            defaultOpen
+          >
+            <ol className="space-y-3 pt-1">
+              {steps.map((s, i) => {
+                const last = i === steps.length - 1;
+                const working = phase === "sealing" && last;
+                return (
+                  <li key={i} className="flex gap-3 text-sm">
+                    <span
+                      className={`mt-1.5 size-2 shrink-0 rounded-full ${working ? "bg-vital live-dot" : "bg-vital"}`}
+                      style={!working && phase === "sealing" ? { background: "var(--faint)" } : undefined}
+                    />
+                    <span className={last && phase !== "sealing" ? "text-text" : "text-muted"}>{s}</span>
+                  </li>
+                );
+              })}
+            </ol>
+          </Collapsible>
+        </div>
       )}
 
       {error && (
@@ -218,6 +228,13 @@ export default function PatientPage() {
         <span className="block text-sm font-semibold text-text">Your access log →</span>
         <span className="mt-0.5 block text-xs text-muted">
           See who broke glass, freeze the record, or revoke a provider.
+        </span>
+      </a>
+
+      <a href="/patient/new" className="card mt-3 block px-5 py-4 transition hover:border-line-strong">
+        <span className="block text-sm font-semibold text-text">Create a real patient card →</span>
+        <span className="mt-0.5 block text-xs text-muted">
+          Enter your own details instead of the demo patient — same encryption pipeline.
         </span>
       </a>
     </PageShell>

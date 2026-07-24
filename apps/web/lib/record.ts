@@ -21,7 +21,7 @@ export interface Tier1Record {
   allergies: { substance: string; reaction: string; severity: string }[];
   implants: { type: string; model?: string; implanted?: string }[];
   emergencyContacts: { name: string; relation: string; phone: string }[];
-  insurance?: { provider: string; policyNo: string };
+  insurance?: { provider: string; policyNo: string; sumInsured?: string };
   notes?: string;
 }
 
@@ -44,6 +44,6 @@ export const DEMO_RECORD: Tier1Record = {
   allergies: [{ substance: "Penicillin", reaction: "Anaphylaxis", severity: "severe" }],
   implants: [{ type: "Pacemaker", model: "Medtronic Azure XT DR", implanted: "2021-06-02" }],
   emergencyContacts: [{ name: "Sunita Kumar", relation: "spouse", phone: "+919876543210" }],
-  insurance: { provider: "Star Health", policyNo: "SH-4471-99213" },
+  insurance: { provider: "Star Health", policyNo: "SH-4471-99213", sumInsured: "₹5,00,000" },
   notes: "Anticoagulated — high bleeding risk. Confirm pacemaker before any MRI.",
 };

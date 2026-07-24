@@ -45,7 +45,10 @@ const server = createGuardianServer({
   nonces: createNonceStore(),
 });
 
-server.listen(port, () => {
-  console.log(`[guardian ${id}] listening on :${port} — holds ${shares.count()} share(s)`);
+server.listen(port, async () => {
+  const backend = process.env.UPSTASH_REDIS_REST_URL ? "redis" : "file";
+  console.log(
+    `[guardian ${id}] listening on :${port} — holds ${await shares.count()} share(s) [${backend}]`,
+  );
   console.log(`[guardian ${id}] verifying against ${accessLogAddress} on Base Sepolia`);
 });

@@ -27,7 +27,7 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-// Everything here is gitignored, local-only demo state.
+// Everything here is gitignored, local-only demo state (file backend).
 const targets = [
   "services/guardian/data/guardian-1.json",
   "services/guardian/data/guardian-2.json",
@@ -47,9 +47,48 @@ for (const rel of targets) {
   }
 }
 
-console.log(
-  `\nCleared ${removed} file(s).\n` +
-    "\n⚠  The Guardians cache shares in memory — RESTART them now so they reload empty:\n" +
-    "     pnpm --filter @lifescan/guardian start:all\n" +
-    "   Then re-seed / break glass. (The web mirror is already clear.)\n",
-);
+/**
+ * Redis backend: clear the same state (ciphertext mirror + each Guardian's
+ * share hash) so a reseal is consistent. The email→cards index is deliberately
+ * left intact — it's meant to persist across demos. Reads are live in Redis
+ * mode, so no Guardian restart is needed after this.
+ */
+function readEnvLocal() {
+  try {
+    const txt = fs.readFileSync(path.join(root, ".env.local"), "utf8");
+    const get = (k) => {
+      const m = txt.match(new RegExp("^" + k + "=(.*)$", "m"));
+      return m ? m[1].trim().replace(/^["']|["']$/g, "") : undefined;
+    };
+    return { url: get("UPSTASH_REDIS_REST_URL"), token: get("UPSTASH_REDIS_REST_TOKEN") };
+  } catch {
+    return {};
+  }
+}
+
+const { url, token } = readEnvLocal();
+if (url && token) {
+  const keys = ["records", "shares:guardian-1", "shares:guardian-2", "shares:guardian-3"];
+  for (const key of keys) {
+    try {
+      const res = await fetch(`${url}/del/${encodeURIComponent(key)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const body = await res.json().catch(() => ({}));
+      console.log(`  ✓ redis del ${key} → ${body.result ?? (res.ok ? "ok" : res.status)}`);
+    } catch (e) {
+      console.log(`  · redis del ${key} failed: ${e.message}`);
+    }
+  }
+  console.log(
+    `\nCleared local files + Redis keys.\n` +
+      "Redis reads are live, so no Guardian restart is needed — just re-seed / break glass.\n",
+  );
+} else {
+  console.log(
+    `\nCleared ${removed} file(s).\n` +
+      "\n⚠  The Guardians cache shares in memory — RESTART them now so they reload empty:\n" +
+      "     pnpm --filter @lifescan/guardian start:all\n" +
+      "   Then re-seed / break glass. (The web mirror is already clear.)\n",
+  );
+}

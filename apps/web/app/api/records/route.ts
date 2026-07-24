@@ -9,6 +9,9 @@ import { getRecord, putRecord } from "@/lib/record-store";
  *   GET  /api/records?hash=0x… fetch the ciphertext for break-glass
  */
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 const HEX32 = /^0x[0-9a-fA-F]{64}$/;
 
 export async function POST(req: NextRequest) {
@@ -24,7 +27,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "ciphertext must be hex" }, { status: 400 });
   }
 
-  putRecord({ patientHash, ciphertext, label: typeof label === "string" ? label : undefined });
+  await putRecord({ patientHash, ciphertext, label: typeof label === "string" ? label : undefined });
   return NextResponse.json({ stored: true });
 }
 
@@ -34,7 +37,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "hash query param required" }, { status: 400 });
   }
 
-  const record = getRecord(hash);
+  const record = await getRecord(hash);
   if (!record) {
     return NextResponse.json({ error: "no record mirrored for that patient" }, { status: 404 });
   }

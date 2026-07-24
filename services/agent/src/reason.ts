@@ -184,8 +184,20 @@ export async function runTriage(params: {
   const actions: ReasonResult["actions"] = [];
   const cost: CostBreakdown[] = [];
 
+  // The patient's real insurance, pulled straight from the decrypted record.
+  // The agent estimates the treatment cost; this is the actual policy the
+  // patient entered, so the ER board can show the entered coverage alongside it.
+  const policy = (record as { insurance?: { provider?: string; policyNo?: string; sumInsured?: string } })
+    ?.insurance;
+
   async function execute(name: string, args: unknown): Promise<string> {
-    emit("tool", HUMAN_LABEL[name] ?? name, { data: args });
+    // For the pre-auth packet, attach the patient's actual policy to what the ER
+    // board renders (the on-chain anchor below still records the agent's packet).
+    const displayData =
+      name === "generate_preauth_packet" && policy
+        ? { ...(args as object), policy }
+        : args;
+    emit("tool", HUMAN_LABEL[name] ?? name, { data: displayData });
 
     const actionType = ACTION_FOR_TOOL[name];
     const txHash = await chain.logAction(patientHash, actionType, args);

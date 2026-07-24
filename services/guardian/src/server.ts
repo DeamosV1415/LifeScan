@@ -74,7 +74,7 @@ export function createGuardianServer({ id, chain, shares, nonces }: GuardianDeps
         return send(res, 200, {
           guardian: id,
           status: "ok",
-          sharesHeld: shares.count(),
+          sharesHeld: await shares.count(),
           pendingChallenges: nonces.size(),
         });
       }
@@ -94,12 +94,12 @@ export function createGuardianServer({ id, chain, shares, nonces }: GuardianDeps
         if (!/^[0-9a-fA-F]+$/.test(share) || share.length < 2) {
           return send(res, 400, { error: "share must be a non-empty hex string" });
         }
-        if (shares.has(patientHash)) {
+        if (await shares.has(patientHash)) {
           // Overwriting would silently invalidate the other Guardians' shares.
           return send(res, 409, { error: "a share is already held for this patient" });
         }
 
-        shares.put(patientHash, share);
+        await shares.put(patientHash, share);
         return send(res, 201, { guardian: id, stored: true });
       }
 
@@ -153,7 +153,7 @@ export function createGuardianServer({ id, chain, shares, nonces }: GuardianDeps
           });
         }
 
-        const share = shares.get(patientHash);
+        const share = await shares.get(patientHash);
         if (!share) {
           return send(res, 404, {
             guardian: id,
@@ -202,7 +202,7 @@ export function createGuardianServer({ id, chain, shares, nonces }: GuardianDeps
           });
         }
 
-        const share = shares.get(patientHash);
+        const share = await shares.get(patientHash);
         if (!share) {
           return send(res, 404, { guardian: id, released: false, reason: "no share held for that patient" });
         }

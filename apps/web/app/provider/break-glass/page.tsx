@@ -18,6 +18,7 @@ import { useProviderWallet } from "@/lib/useProviderWallet";
 import { DEMO_PATIENT_ID, type Tier1Record } from "@/lib/record";
 import { Wordmark, Eyebrow, PageShell } from "@/components/ui";
 import { FundButton } from "@/components/FundButton";
+import { Collapsible } from "@/components/Collapsible";
 
 /**
  * The break-glass flow — the centre of the demo.
@@ -36,10 +37,19 @@ interface TraceEntry {
   href?: string;
 }
 
+// A break-glass target can be given either as a patient id (which we hash) or as
+// an already-computed 32-byte patientHash pasted straight from a tag or backend.
+const HEX32 = /^0x[0-9a-fA-F]{64}$/;
+
 function BreakGlassInner() {
   const params = useSearchParams();
-  const patientId = params.get("patient") || DEMO_PATIENT_ID;
-  const patientHash = useMemo(() => toPatientHash(patientId), [patientId]);
+  // Editable so a provider can target any patient — prefilled from the scan
+  // card's ?patient= param, falling back to the demo patient.
+  const [patientId, setPatientId] = useState(params.get("patient") || DEMO_PATIENT_ID);
+  const patientHash = useMemo(() => {
+    const v = patientId.trim();
+    return HEX32.test(v) ? (v as `0x${string}`) : toPatientHash(v);
+  }, [patientId]);
 
   const { ready, authenticated, login, user } = usePrivy();
   const { address, getWalletClient, signMessage, hasWallet } = useProviderWallet();
@@ -186,6 +196,20 @@ function BreakGlassInner() {
       {phase === "idle" || phase === "error" ? (
         <div className="mt-6 space-y-4">
           <label className="block">
+            <span className="eyebrow">Patient id or hash</span>
+            <input
+              value={patientId}
+              onChange={(e) => setPatientId(e.target.value)}
+              placeholder="ramesh-kumar-1989  or  0x…"
+              className="input mt-1.5 font-mono"
+            />
+            <span className="mt-1 block text-[11px] text-faint">
+              The id from the patient&apos;s card, or paste a 0x… patientHash
+              directly. Defaults to the demo patient.
+            </span>
+          </label>
+
+          <label className="block">
             <span className="eyebrow">Reason for access</span>
             <select
               value={reason}
@@ -226,8 +250,15 @@ function BreakGlassInner() {
       ) : null}
 
       {trace.length > 0 && (
-        <ol className="mt-7 space-y-2.5 border-l border-line pl-4">
-          {trace.map((entry, i) => (
+        <div className="mt-7">
+          <Collapsible
+            title="Break-glass trace"
+            live={phase === "granting" || phase === "collecting" || phase === "decrypting"}
+            meta={<span className="text-[11px] text-faint tnum">{trace.length}</span>}
+            defaultOpen
+          >
+            <ol className="space-y-2.5 border-l border-line pt-1 pl-4">
+              {trace.map((entry, i) => (
             <li key={i} className="relative text-sm">
               <span
                 className="absolute top-1.5 -left-[1.3rem] size-2 rounded-full"
@@ -261,8 +292,10 @@ function BreakGlassInner() {
                 </a>
               )}
             </li>
-          ))}
-        </ol>
+              ))}
+            </ol>
+          </Collapsible>
+        </div>
       )}
 
       {record && (

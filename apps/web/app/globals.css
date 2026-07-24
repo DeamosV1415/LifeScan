@@ -201,6 +201,15 @@ button:disabled,
     border-color: color-mix(in srgb, var(--info) 65%, transparent);
     background: var(--field-hover);
   }
+  /* Native <select> popups are OS-drawn on a white background and inherit the
+     near-white control text, making options invisible. Force them dark. */
+  select.input {
+    color-scheme: dark;
+  }
+  select option {
+    background-color: var(--surface);
+    color: var(--text);
+  }
 
   /* Buttons. */
   .btn {

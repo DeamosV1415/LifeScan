@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ServiceWorkerRegistrar } from "./sw-registrar";
+import { DevWarningFilter } from "./dev-warning-filter";
 import { Providers } from "./providers";
 
 // Type system: Space Grotesk = display / headings / big numbers,
@@ -52,7 +53,11 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}
     >
-      <body className="font-sans antialiased">
+      {/* suppressHydrationWarning: browser extensions (e.g. Grammarly) inject
+          data-gr-* attributes onto <body> before React hydrates, which would
+          otherwise trip a hydration mismatch we can't control. */}
+      <body className="font-sans antialiased" suppressHydrationWarning>
+        <DevWarningFilter />
         <ServiceWorkerRegistrar />
         <Providers>{children}</Providers>
       </body>
