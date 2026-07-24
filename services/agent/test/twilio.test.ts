@@ -30,18 +30,26 @@ test("a comma-separated override fans out to every verified number", async () =>
   ]);
 });
 
-test("formats a prose alert into a scannable header/sentences/footer", () => {
+test("formats a prose alert into a plain, deliverable header + one line per sentence", () => {
   const out = formatEmergencySms(
     "Ramesh Kumar has been in a road accident.  He is being treated at Gwalior Trauma Centre. Please come to the ER.",
   );
   const lines = out.split("\n");
-  assert.equal(lines[0], "🚑 LifeScan · Emergency Alert");
-  assert.equal(lines[1], "");
+  assert.equal(lines[0], "LifeScan emergency alert:");
   // Each sentence lands on its own line.
   assert.ok(lines.includes("Ramesh Kumar has been in a road accident."));
   assert.ok(lines.includes("He is being treated at Gwalior Trauma Centre."));
   assert.ok(lines.includes("Please come to the ER."));
-  assert.equal(lines[lines.length - 1], "Automated message — please do not reply.");
+  // Deliverability: no emoji (would force Unicode) and no footer bloat.
+  assert.ok(!out.includes("🚑"));
+  assert.ok(!/do not reply/i.test(out));
+});
+
+test("caps an over-long alert so it can't blow past the trial segment limit", () => {
+  const long = "Word ".repeat(200); // ~1000 chars
+  const out = formatEmergencySms(long);
+  assert.ok(out.length <= 260);
+  assert.ok(out.endsWith("…"));
 });
 
 test("configured requires SID, token and from-number together", () => {

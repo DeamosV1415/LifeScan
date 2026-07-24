@@ -85,7 +85,7 @@ const tools = [
         message: {
           type: "string",
           description:
-            "A short, plain-language alert for the contact — 2-3 clear sentences: what happened, which hospital, and what to do. No jargon.",
+            "A very short, plain-language alert for the contact — 1-2 short sentences, under 160 characters total: what happened and which hospital. No jargon, no emoji. It is delivered by SMS, so brevity matters.",
         },
       },
       required: ["name", "phone", "message"],

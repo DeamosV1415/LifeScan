@@ -17,11 +17,19 @@
  */
 
 /**
- * Turn the model's free-text alert into a scannable SMS: a header, one sentence
- * per line, and a footer. SMS clients render newlines, and on a phone a short
- * stack of lines reads far faster than one wrapped paragraph — which matters
- * when the recipient is a panicked family member.
+ * Turn the model's free-text alert into a scannable SMS: a short header and one
+ * sentence per line. Newlines still make it readable on a phone, but the format
+ * is deliberately kept DELIVERABLE:
+ *
+ *  - No emoji. An emoji forces the whole message into Unicode (UCS-2), which
+ *    cuts each segment from 160 to 70 chars and gets international SMS filtered.
+ *  - No footer, and a capped length. A trial account also prepends its own
+ *    "Sent from your Twilio trial account" line, so a long body tips the message
+ *    over the trial segment limit and it fails (error 30034). Staying short and
+ *    GSM-7 keeps it to one or two segments and actually arrives.
  */
+const MAX_BODY = 260;
+
 export function formatEmergencySms(message: string): string {
   const sentences = message
     .replace(/\s+/g, " ")
@@ -32,13 +40,8 @@ export function formatEmergencySms(message: string): string {
 
   const body = sentences.length > 0 ? sentences : ["A medical emergency alert has been issued."];
 
-  return [
-    "🚑 LifeScan · Emergency Alert",
-    "",
-    ...body,
-    "",
-    "Automated message — please do not reply.",
-  ].join("\n");
+  const out = ["LifeScan emergency alert:", ...body].join("\n");
+  return out.length > MAX_BODY ? `${out.slice(0, MAX_BODY - 1).trimEnd()}…` : out;
 }
 
 export interface SmsRecipientResult {

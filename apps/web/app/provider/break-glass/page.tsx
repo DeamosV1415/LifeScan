@@ -17,6 +17,7 @@ import { collectShares, challengeMessage, decryptRecord } from "@/lib/guardians"
 import { useProviderWallet } from "@/lib/useProviderWallet";
 import { DEMO_PATIENT_ID, type Tier1Record } from "@/lib/record";
 import { Wordmark, Eyebrow, PageShell } from "@/components/ui";
+import { FundButton } from "@/components/FundButton";
 
 /**
  * The break-glass flow — the centre of the demo.
@@ -170,6 +171,10 @@ function BreakGlassInner() {
         <p className="mt-1.5 font-mono text-xs break-all text-faint">
           Patient <span className="text-info">{patientId}</span> · {patientHash.slice(0, 18)}…
         </p>
+        {address && (
+          <p className="mt-1.5 font-mono text-[11px] break-all text-faint">your wallet {address}</p>
+        )}
+        {address && <FundButton address={address} />}
       </div>
 
       {!hasWallet && (
@@ -260,7 +265,19 @@ function BreakGlassInner() {
         </ol>
       )}
 
-      {record && <RecordView record={record} />}
+      {record && (
+        <>
+          <RecordView record={record} />
+          <a
+            href="/er"
+            target="_blank"
+            rel="noreferrer"
+            className="btn btn-ghost btn-block mt-4"
+          >
+            See the agent&apos;s triage on the ER board →
+          </a>
+        </>
+      )}
     </PageShell>
   );
 }

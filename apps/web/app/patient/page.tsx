@@ -16,6 +16,7 @@ import { useProviderWallet } from "@/lib/useProviderWallet";
 import { buildTier0 } from "@/lib/tier0";
 import { DEMO_PATIENT_ID, DEMO_RECORD } from "@/lib/record";
 import { Wordmark, Eyebrow, PageShell } from "@/components/ui";
+import { FundButton } from "@/components/FundButton";
 
 /**
  * The patient side: seal a clinical record and issue a card.
@@ -55,26 +56,38 @@ export default function PatientPage() {
         throw new Error("No Guardians configured (NEXT_PUBLIC_GUARDIAN_URLS).");
       }
 
-      // 1. Encrypt + split, in the browser.
-      step("Encrypting record and splitting the key 2-of-3…");
-      const sealed = await sealRecord(DEMO_RECORD);
+      // Idempotent resume: if this patient's record is already mirrored, a
+      // previous run already encrypted, mirrored and distributed the shares
+      // (the guardians refuse to overwrite, so re-encrypting now would desync
+      // the shares from the ciphertext). Skip straight to the on-chain claim —
+      // this is exactly the case where the first attempt failed only for gas.
+      const existing = await fetch(`/api/records?hash=${patientHash}`);
+      const alreadySealed = existing.ok;
 
-      // 2. Mirror the ciphertext (which no server can read).
-      step("Mirroring encrypted record…");
-      const mirror = await fetch("/api/records", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          patientHash,
-          ciphertext: sealed.ciphertext,
-          label: `${DEMO_RECORD.name} · ${DEMO_RECORD.bloodGroup}`,
-        }),
-      });
-      if (!mirror.ok) throw new Error("Failed to mirror the encrypted record.");
+      if (alreadySealed) {
+        step("Record already sealed and shares distributed — resuming to claim.");
+      } else {
+        // 1. Encrypt + split, in the browser.
+        step("Encrypting record and splitting the key 2-of-3…");
+        const sealed = await sealRecord(DEMO_RECORD);
 
-      // 3. One share to each Guardian.
-      step("Distributing one key share to each Guardian…");
-      await distributeShares(patientHash, sealed.shares);
+        // 2. Mirror the ciphertext (which no server can read).
+        step("Mirroring encrypted record…");
+        const mirror = await fetch("/api/records", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            patientHash,
+            ciphertext: sealed.ciphertext,
+            label: `${DEMO_RECORD.name} · ${DEMO_RECORD.bloodGroup}`,
+          }),
+        });
+        if (!mirror.ok) throw new Error("Failed to mirror the encrypted record.");
+
+        // 3. One share to each Guardian.
+        step("Distributing one key share to each Guardian…");
+        await distributeShares(patientHash, sealed.shares);
+      }
 
       // 4. Claim the record hash on-chain — this is what makes freeze possible.
       step("Claiming your record on-chain (so only you can freeze it)…");
@@ -152,6 +165,10 @@ export default function PatientPage() {
         <p className="mt-1 text-sm text-muted">
           {DEMO_RECORD.bloodGroup} · {DEMO_RECORD.allergies[0]?.substance} allergy · pacemaker
         </p>
+        {address && (
+          <p className="mt-2 font-mono text-[11px] break-all text-faint">wallet {address}</p>
+        )}
+        {address && <FundButton address={address} />}
       </div>
 
       {phase === "idle" || phase === "error" ? (
