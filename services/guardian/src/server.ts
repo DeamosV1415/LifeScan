@@ -2,6 +2,7 @@ import http from "node:http";
 import type { ChainReader } from "./chain.ts";
 import { verifyProviderSignature } from "./chain.ts";
 import type { NonceStore, ShareStore } from "./store.ts";
+import { isRateLimited } from "./rate-limit.ts";
 
 /**
  * The Guardian HTTP surface. Four endpoints, no framework.
@@ -83,6 +84,12 @@ export function createGuardianServer({ id, chain, shares, nonces }: GuardianDeps
           sharesHeld: await shares.count(),
           pendingChallenges: nonces.size(),
         });
+      }
+
+      // Everything past liveness is rate-limited per IP. Health is intentionally
+      // above this line so uptime monitors are never throttled.
+      if (isRateLimited(req)) {
+        return send(res, 429, { error: "rate limit exceeded — slow down" });
       }
 
       if (req.method === "GET" && url.pathname === "/challenge") {

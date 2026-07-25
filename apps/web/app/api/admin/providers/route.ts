@@ -8,7 +8,20 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { REGISTRY_ABI } from "@/lib/contracts";
+import { rateLimit, clientIp, tooMany, envLimit } from "@/lib/rate-limit";
+
+/**
+ * Constant-time token check. Comparing SHA-256 digests (always 32 bytes) means
+ * neither the token's length nor how far a guess matched leaks through timing —
+ * timingSafeEqual requires equal-length buffers, which the digest guarantees.
+ */
+function tokenMatches(presented: string, expected: string): boolean {
+  const a = createHash("sha256").update(presented).digest();
+  const b = createHash("sha256").update(expected).digest();
+  return timingSafeEqual(a, b);
+}
 
 /**
  * Hospital onboarding — the admin side of "email is the doorknob, the registry
@@ -114,6 +127,10 @@ type Action = "register" | "revoke" | "reinstate";
 const ACTIONS: Action[] = ["register", "revoke", "reinstate"];
 
 export async function POST(req: NextRequest) {
+  // Throttle before touching the token so it can't be brute-forced at speed.
+  const rl = await rateLimit("admin", clientIp(req), envLimit("ADMIN", { limit: 5, windowSec: 60 }));
+  if (!rl.ok) return tooMany(rl);
+
   const expected = process.env.ADMIN_TOKEN;
   if (!expected) {
     return NextResponse.json(
@@ -122,10 +139,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Constant-ish equality — the token is short-lived demo config, but never
-  // echo it back and always compare against the header, not a query param.
+  // Constant-time compare against the header (never a query param), and never
+  // echo the token back.
   const presented = req.headers.get("x-admin-token") ?? "";
-  if (presented !== expected) {
+  if (!tokenMatches(presented, expected)) {
     return NextResponse.json({ error: "Admin token rejected." }, { status: 401 });
   }
 

@@ -7,6 +7,7 @@ import { collectAndDecrypt } from "./collect.ts";
 import { runTriage } from "./reason.ts";
 import { createSmsSender } from "./twilio.ts";
 import { trace } from "./trace.ts";
+import { isRateLimited } from "./rate-limit.ts";
 
 // Load repo-root .env.local when it exists (local dev). On a deployed host like
 // Render the env comes from the dashboard and no such file exists — so treat it
@@ -137,6 +138,13 @@ const server = http.createServer(async (req, res) => {
     return res.end(JSON.stringify({ status: "ok", agent: chain.agentAddress, model: MODEL, effort: EFFORT }));
   }
 
+  // Past liveness, everything is rate-limited per IP (health stays above so
+  // uptime monitors are never throttled).
+  if (isRateLimited(req)) {
+    res.writeHead(429, { "content-type": "application/json", ...cors });
+    return res.end(JSON.stringify({ error: "rate limit exceeded — slow down" }));
+  }
+
   if (req.method === "GET" && url.pathname === "/trace") {
     res.writeHead(200, {
       "content-type": "text/event-stream",
@@ -168,11 +176,34 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === "POST" && url.pathname === "/context") {
+    // Bound the read: this endpoint feeds the triage LLM and the SMS to real
+    // contacts, so an unbounded body is both a memory-DoS and a prompt-injection
+    // amplifier. Cap the wire size, then cap the stored string.
     const chunks: Buffer[] = [];
-    for await (const c of req) chunks.push(c as Buffer);
-    const body = JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
-    if (body.patientHash && typeof body.context === "string") {
-      contexts.set(String(body.patientHash).toLowerCase(), body.context);
+    let size = 0;
+    try {
+      for await (const c of req) {
+        size += (c as Buffer).length;
+        if (size > 16_000) throw new Error("payload too large");
+        chunks.push(c as Buffer);
+      }
+    } catch {
+      res.writeHead(413, { "content-type": "application/json", ...cors });
+      return res.end(JSON.stringify({ error: "payload too large" }));
+    }
+
+    let body: { patientHash?: unknown; context?: unknown };
+    try {
+      body = JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
+    } catch {
+      res.writeHead(400, { "content-type": "application/json", ...cors });
+      return res.end(JSON.stringify({ error: "invalid JSON" }));
+    }
+
+    if (typeof body.patientHash === "string" && typeof body.context === "string") {
+      // A paramedic note is a sentence or two; 2 KB is generous and stops a
+      // wall of injected instructions being smuggled into the prompt.
+      contexts.set(body.patientHash.toLowerCase(), body.context.slice(0, 2_000));
     }
     res.writeHead(200, { "content-type": "application/json", ...cors });
     return res.end(JSON.stringify({ stored: true }));

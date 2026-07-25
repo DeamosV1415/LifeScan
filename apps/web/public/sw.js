@@ -25,13 +25,23 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
   event.waitUntil(
     (async () => {
-      // Warm the shell using a representative scan URL. If the network is
-      // unavailable at install time this simply no-ops; the first successful
-      // navigation will populate it instead.
+      // Warm the shell using a representative scan URL, then precache every
+      // static asset that shell references. Doing both at install is what makes
+      // a SINGLE online visit enough for airplane mode: on the very first load
+      // the worker isn't controlling the page yet, so the shell's JS/CSS chunks
+      // go straight to the network and bypass us — they'd never be cached, and
+      // the offline navigation would then serve a shell whose chunks 404. Here
+      // we fetch the shell ourselves and pull its assets into the cache up front.
+      // If the network is unavailable at install this simply no-ops; the first
+      // successful navigation will populate it instead.
       try {
-        const cache = await caches.open(SHELL_CACHE);
         const response = await fetch("/s/preview", { cache: "reload" });
-        if (response.ok) await cache.put(SHELL_KEY, response.clone());
+        if (response.ok) {
+          const html = await response.clone().text();
+          const shellCache = await caches.open(SHELL_CACHE);
+          await shellCache.put(SHELL_KEY, response.clone());
+          await cacheAssetsFromHtml(html);
+        }
       } catch {
         /* offline at install — populated on first successful navigation */
       }
@@ -91,7 +101,13 @@ async function handleScanNavigation(request) {
   try {
     const response = await fetch(request);
     if (response.ok) {
+      const html = await response.clone().text();
       await cache.put(SHELL_KEY, response.clone());
+      // Re-prime the referenced assets from the fresh HTML. Next.js content-
+      // hashes chunk filenames, so a redeploy changes them; refreshing the
+      // precache on every successful online scan keeps offline in lockstep with
+      // the currently deployed bundle instead of a stale one.
+      await cacheAssetsFromHtml(html);
     }
     return response;
   } catch {
@@ -103,6 +119,37 @@ async function handleScanNavigation(request) {
       headers: { "Content-Type": "text/html; charset=utf-8" },
     });
   }
+}
+
+/**
+ * Pull every /_next/static/ asset URL out of a scan-page HTML document and
+ * cache them, so the offline navigation can serve a shell whose JS and CSS are
+ * all present. Each asset is fetched independently and failures are swallowed —
+ * one missing file must not abort priming the rest (unlike cache.addAll, which
+ * is all-or-nothing).
+ */
+async function cacheAssetsFromHtml(html) {
+  const urls = new Set();
+  const re = /\/_next\/static\/[^"'()\s]+/g;
+  let match;
+  while ((match = re.exec(html)) !== null) {
+    // Trim any trailing escaped/encoded junk that can ride along in inline JSON.
+    urls.add(match[0].replace(/\\.*$/, ""));
+  }
+  if (urls.size === 0) return;
+
+  const cache = await caches.open(STATIC_CACHE);
+  await Promise.all(
+    [...urls].map(async (url) => {
+      try {
+        if (await cache.match(url)) return;
+        const res = await fetch(url, { cache: "reload" });
+        if (res.ok) await cache.put(url, res.clone());
+      } catch {
+        /* skip — a single unreachable asset must not abort priming */
+      }
+    }),
+  );
 }
 
 async function cacheFirst(request, cacheName) {
