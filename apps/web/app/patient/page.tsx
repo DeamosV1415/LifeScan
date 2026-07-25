@@ -13,6 +13,7 @@ import {
 } from "@/lib/contracts";
 import { Wordmark, Eyebrow, PageShell, DemoTag } from "@/components/ui";
 import { CopyButton } from "@/components/CopyButton";
+import { CardLockControls } from "@/components/CardLockControls";
 
 /**
  * The patient hub — every card this login owns.
@@ -25,7 +26,7 @@ import { CopyButton } from "@/components/CopyButton";
 export default function PatientPage() {
   const { ready, authenticated, login, user } = usePrivy();
   const email = user?.email?.address ?? "";
-  const { cards, loading } = usePatientCards(email);
+  const { cards, loading, refresh } = usePatientCards(email);
 
   if (!ready)
     return (
@@ -74,7 +75,7 @@ export default function PatientPage() {
         ) : (
           <ul className="space-y-3">
             {cards.map((c) => (
-              <PatientCardRow key={c.id} card={c} />
+              <PatientCardRow key={c.id} card={c} email={email} onChanged={refresh} />
             ))}
           </ul>
         )}
@@ -90,7 +91,15 @@ export default function PatientPage() {
   );
 }
 
-function PatientCardRow({ card }: { card: PatientCard }) {
+function PatientCardRow({
+  card,
+  email,
+  onChanged,
+}: {
+  card: PatientCard;
+  email: string;
+  onChanged: () => void;
+}) {
   // The record's on-chain owner — the wallet that claimed it, and the only one
   // that can freeze or revoke it. For your own cards this is your wallet; for
   // the demo card it's whoever first claimed it. Read live so it reflects the
@@ -171,6 +180,7 @@ function PatientCardRow({ card }: { card: PatientCard }) {
           Break glass →
         </a>
       </div>
+      {email && <CardLockControls card={{ id: card.id, name: card.name, url: card.url }} email={email} onChanged={onChanged} />}
     </li>
   );
 }

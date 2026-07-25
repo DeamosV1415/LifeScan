@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { use } from "react";
 import { parseTier0, FLAG_LABELS, MISSING, type Tier0 } from "@/lib/tier0";
 import { Wordmark } from "@/components/ui";
+import { PinGate } from "@/components/PinGate";
 
 /**
  * Tier-0 scan view — what a paramedic sees the instant they tap the card.
@@ -22,26 +23,82 @@ export default function ScanPage({
 }) {
   const { id } = use(params);
   const [data, setData] = useState<Tier0 | null>(null);
+  // "checking" until we know whether the card is PIN-locked; "locked" shows the
+  // PIN gate; "open" renders the medical view (from the fragment, or from the
+  // server payload handed back after a successful unlock).
+  const [gate, setGate] = useState<"checking" | "locked" | "open">("checking");
   const [online, setOnline] = useState(true);
 
   useEffect(() => {
-    const read = () => setData(parseTier0(window.location.hash));
-    read();
-    window.addEventListener("hashchange", read);
-
     const sync = () => setOnline(navigator.onLine);
     sync();
     window.addEventListener("online", sync);
     window.addEventListener("offline", sync);
 
+    const readFragment = () => setData(parseTier0(window.location.hash));
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/card-lock?id=${encodeURIComponent(id)}`);
+        const info = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        if (res.ok && info.protected) {
+          setGate("locked");
+          return;
+        }
+        // Not protected — the normal, offline-capable path.
+        setGate("open");
+        readFragment();
+        window.addEventListener("hashchange", readFragment);
+      } catch {
+        if (cancelled) return;
+        // Status unknown (offline/error). Preserve the emergency path: if the
+        // card still carries a Tier-0 fragment, show it; otherwise it's a
+        // locked, fragment-less card that genuinely needs a connection.
+        const hasFragment = window.location.hash.replace(/^#/, "").length > 0;
+        if (hasFragment) {
+          setGate("open");
+          readFragment();
+          window.addEventListener("hashchange", readFragment);
+        } else {
+          setGate("locked");
+        }
+      }
+    })();
+
     return () => {
-      window.removeEventListener("hashchange", read);
+      cancelled = true;
+      window.removeEventListener("hashchange", readFragment);
       window.removeEventListener("online", sync);
       window.removeEventListener("offline", sync);
     };
-  }, []);
+  }, [id]);
 
-  // Pre-hydration: the fragment isn't readable during SSR.
+  // The server hands back the Tier-0 body ("0|1|…") after a correct PIN.
+  const unlock = (body: string) => {
+    setData(parseTier0(body));
+    setGate("open");
+  };
+
+  if (gate === "checking") {
+    return (
+      <main className="flex min-h-dvh items-center justify-center p-6">
+        <p className="eyebrow">Reading card…</p>
+      </main>
+    );
+  }
+
+  if (gate === "locked") {
+    return (
+      <main className="min-h-dvh pb-16">
+        <StatusBar online={online} cardId={id} />
+        <PinGate cardId={id} online={online} onUnlock={unlock} />
+      </main>
+    );
+  }
+
+  // Pre-hydration / fragment not yet read.
   if (!data) {
     return (
       <main className="flex min-h-dvh items-center justify-center p-6">
