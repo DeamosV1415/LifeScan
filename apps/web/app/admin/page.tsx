@@ -31,6 +31,7 @@ interface RegistryState {
 }
 
 const TOKEN_KEY = "lifescan.adminToken";
+const HIDDEN_KEY = "lifescan.admin.hiddenProviders";
 
 export default function AdminPage() {
   const [state, setState] = useState<RegistryState | null>(null);
@@ -40,6 +41,10 @@ export default function AdminPage() {
   const [form, setForm] = useState({ provider: "", hfrId: "", name: "" });
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<{ text: string; href?: string; tone: "ok" | "err" } | null>(null);
+
+  // Console-local "removed" set for revoked providers (see hideProvider).
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const [showHidden, setShowHidden] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -55,6 +60,12 @@ export default function AdminPage() {
 
   useEffect(() => {
     setToken(localStorage.getItem(TOKEN_KEY) ?? "");
+    try {
+      const raw = localStorage.getItem(HIDDEN_KEY);
+      if (raw) setHidden(new Set(JSON.parse(raw) as string[]));
+    } catch {
+      /* malformed — start with an empty removed set */
+    }
     refresh();
     const id = setInterval(refresh, 6000);
     return () => clearInterval(id);
@@ -64,6 +75,43 @@ export default function AdminPage() {
     setToken(value);
     localStorage.setItem(TOKEN_KEY, value);
   }, []);
+
+  // "Remove" is a console-local hide, offered only for REVOKED providers. The
+  // on-chain registry is append-only and immutable — a revoked provider cannot
+  // be deleted, and that permanence is the accountability property. So Remove
+  // just suppresses the row on this device; the record stays revoked on-chain
+  // and can be shown again. Because we only ever hide a revoked provider,
+  // reinstating one brings it back on its own.
+  const persistHidden = useCallback((next: Set<string>) => {
+    setHidden(next);
+    try {
+      localStorage.setItem(HIDDEN_KEY, JSON.stringify([...next]));
+    } catch {
+      /* storage blocked — the in-memory set still applies this session */
+    }
+  }, []);
+
+  const hideProvider = useCallback(
+    (address: string, name: string) => {
+      const next = new Set(hidden);
+      next.add(address.toLowerCase());
+      persistHidden(next);
+      setNote({
+        text: `Removed ${name || "provider"} from the list — still revoked on-chain. Use “Show removed” to bring it back.`,
+        tone: "ok",
+      });
+    },
+    [hidden, persistHidden],
+  );
+
+  const unhideProvider = useCallback(
+    (address: string) => {
+      const next = new Set(hidden);
+      next.delete(address.toLowerCase());
+      persistHidden(next);
+    },
+    [hidden, persistHidden],
+  );
 
   const act = useCallback(
     async (payload: Record<string, unknown>, key: string, okText: string) => {
@@ -109,6 +157,11 @@ export default function AdminPage() {
 
   const providers = state?.providers ?? [];
   const activeCount = providers.filter((p) => p.active).length;
+  // A provider is "removed" only while revoked; an active one is always shown,
+  // so reinstating auto-restores it to the list.
+  const isRemoved = (p: ProviderRow) => !p.active && hidden.has(p.address.toLowerCase());
+  const removedCount = providers.filter(isRemoved).length;
+  const visibleProviders = showHidden ? providers : providers.filter((p) => !isRemoved(p));
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-3xl px-5 py-10 sm:px-6">
@@ -257,7 +310,7 @@ export default function AdminPage() {
         )}
 
         <ul className="mt-4 space-y-3">
-          {providers.map((p) => (
+          {visibleProviders.map((p) => (
             <li key={p.address} className="card p-4 sm:p-5">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
@@ -270,6 +323,7 @@ export default function AdminPage() {
                     ) : (
                       <span className="chip chip-danger">Revoked</span>
                     )}
+                    {isRemoved(p) && <span className="chip chip-muted">Removed</span>}
                   </div>
                   <p className="mt-1 font-mono text-[11px] text-faint">{p.hfrId || "no HFR ID"}</p>
                   <a
@@ -298,20 +352,46 @@ export default function AdminPage() {
                     {busy === p.address ? "…" : "Revoke"}
                   </button>
                 ) : (
-                  <button
-                    onClick={() =>
-                      act({ action: "reinstate", provider: p.address }, p.address, `Reinstated ${p.name || "provider"}.`)
-                    }
-                    disabled={busy !== null}
-                    className="shrink-0 rounded-lg border border-vital/50 px-3 py-1.5 text-xs font-bold text-vital transition hover:bg-vital/10 disabled:opacity-40"
-                  >
-                    {busy === p.address ? "…" : "Reinstate"}
-                  </button>
+                  <div className="flex shrink-0 flex-col items-end gap-2">
+                    <button
+                      onClick={() =>
+                        act({ action: "reinstate", provider: p.address }, p.address, `Reinstated ${p.name || "provider"}.`)
+                      }
+                      disabled={busy !== null}
+                      className="rounded-lg border border-vital/50 px-3 py-1.5 text-xs font-bold text-vital transition hover:bg-vital/10 disabled:opacity-40"
+                    >
+                      {busy === p.address ? "…" : "Reinstate"}
+                    </button>
+                    {isRemoved(p) ? (
+                      <button
+                        onClick={() => unhideProvider(p.address)}
+                        className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-muted transition hover:text-text"
+                      >
+                        Restore
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => hideProvider(p.address, p.name)}
+                        className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-muted transition hover:border-critical/50 hover:text-critical"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             </li>
           ))}
         </ul>
+
+        {removedCount > 0 && (
+          <button
+            onClick={() => setShowHidden((s) => !s)}
+            className="mt-4 text-xs font-medium text-muted transition hover:text-text"
+          >
+            {showHidden ? "Hide removed" : `Show ${removedCount} removed →`}
+          </button>
+        )}
       </section>
 
       <p className="mt-10 text-center text-[11px] text-faint">

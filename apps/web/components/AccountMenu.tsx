@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { usePrivy } from "@privy-io/react-auth";
+import { usePrivy, useExportWallet } from "@privy-io/react-auth";
 import { usePathname } from "next/navigation";
+import { useProviderWallet } from "@/lib/useProviderWallet";
+import { shortAddress } from "@/lib/contracts";
+import { CopyButton } from "./CopyButton";
 
 /**
  * A small, fixed profile tab shown top-right on every page. It surfaces the one
@@ -16,8 +19,12 @@ import { usePathname } from "next/navigation";
  */
 export function AccountMenu() {
   const { ready, authenticated, user, login, logout } = usePrivy();
+  const { address } = useProviderWallet();
+  const { exportWallet } = useExportWallet();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportErr, setExportErr] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -40,6 +47,25 @@ export function AccountMenu() {
 
   const email = user?.email?.address;
   const initial = email ? email[0]!.toUpperCase() : "?";
+
+  // Privy shows the private key in a secure, cross-origin iframe that our app
+  // cannot read — the user copies it to import the SAME wallet into MetaMask or
+  // any other client. Requires "Export embedded wallet" to be enabled in the
+  // Privy dashboard; if it isn't, the call rejects and we surface why.
+  const doExport = async () => {
+    if (!address) return;
+    setExportErr(null);
+    setExporting(true);
+    try {
+      await exportWallet({ address });
+    } catch (e) {
+      setExportErr(
+        e instanceof Error ? e.message : "Export is unavailable — enable it in the Privy dashboard.",
+      );
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div ref={ref} className="account-menu">
@@ -66,6 +92,35 @@ export function AccountMenu() {
         <div className="account-pop" role="menu">
           <p className="account-pop-label">Signed in as</p>
           <p className="account-pop-email">{email ?? "—"}</p>
+
+          {address && (
+            <>
+              <p className="account-pop-label account-pop-section">Wallet</p>
+              <div className="account-pop-wallet">
+                <code className="account-pop-addr" title={address}>
+                  {shortAddress(address)}
+                </code>
+                <CopyButton text={address} label="Copy" />
+              </div>
+              <button
+                type="button"
+                className="account-export"
+                onClick={doExport}
+                disabled={exporting}
+              >
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+                </svg>
+                {exporting ? "Opening…" : "Export private key"}
+              </button>
+              <p className="account-export-hint">
+                Opens a secure Privy window with your key — to import this wallet
+                into MetaMask or another client.
+              </p>
+              {exportErr && <p className="account-export-err">{exportErr}</p>}
+            </>
+          )}
+
           <button
             type="button"
             className="account-signout"

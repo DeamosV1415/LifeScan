@@ -453,6 +453,16 @@ export default function NewPatientPage() {
               </div>
             </div>
 
+            {address && (
+              <div>
+                <span className="eyebrow">Owner wallet</span>
+                <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-line bg-[var(--field)] p-2 pl-3">
+                  <code className="min-w-0 flex-1 truncate font-mono text-xs text-muted">{address}</code>
+                  <CopyButton text={address} className="shrink-0" />
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-wrap gap-2">
               <a href={cardUrl} className="btn btn-vital flex-1">Preview the scan →</a>
               <a

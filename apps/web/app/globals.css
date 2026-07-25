@@ -465,6 +465,62 @@ a,
 .account-signout:hover {
   background: color-mix(in srgb, var(--danger) 18%, transparent);
 }
+.account-pop-section {
+  margin-top: 0.9rem;
+}
+.account-pop-wallet {
+  margin-top: 0.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.account-pop-addr {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.account-export {
+  margin-top: 0.65rem;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  padding: 0.55rem;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.account-export:hover {
+  background: var(--surface);
+}
+.account-export:active {
+  transform: scale(0.97);
+}
+.account-export:disabled {
+  opacity: 0.55;
+}
+.account-export-hint {
+  margin-top: 0.4rem;
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--faint);
+}
+.account-export-err {
+  margin-top: 0.4rem;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--danger);
+}
 
 /* ---- Animated copy button ---- */
 .copybtn {

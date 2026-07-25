@@ -1,7 +1,16 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { usePatientCards, type PatientCard } from "@/lib/patient-cards";
+import {
+  ACCESS_LOG_ABI,
+  explorerAddress,
+  patientHash as toPatientHash,
+  publicClient,
+  requireAddress,
+  shortAddress,
+} from "@/lib/contracts";
 import { Wordmark, Eyebrow, PageShell, DemoTag } from "@/components/ui";
 import { CopyButton } from "@/components/CopyButton";
 
@@ -82,6 +91,34 @@ export default function PatientPage() {
 }
 
 function PatientCardRow({ card }: { card: PatientCard }) {
+  // The record's on-chain owner — the wallet that claimed it, and the only one
+  // that can freeze or revoke it. For your own cards this is your wallet; for
+  // the demo card it's whoever first claimed it. Read live so it reflects the
+  // chain, not a stored copy.
+  const [owner, setOwner] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    publicClient()
+      .readContract({
+        address: requireAddress("accessLog"),
+        abi: ACCESS_LOG_ABI,
+        functionName: "ownerOf",
+        args: [toPatientHash(card.id)],
+      })
+      .then((o) => {
+        if (!cancelled) setOwner(o as string);
+      })
+      .catch(() => {
+        /* leave null — the wallet line simply won't render */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [card.id]);
+
+  const ZERO = "0x0000000000000000000000000000000000000000";
+  const ownerAddr = owner && owner.toLowerCase() !== ZERO ? owner : null;
+
   const heading = (
     <p className="flex items-center gap-2 text-sm font-semibold text-text">
       <span>
@@ -109,6 +146,21 @@ function PatientCardRow({ card }: { card: PatientCard }) {
           <p className="mt-0.5 font-mono text-[11px] break-all text-faint">id {card.id}</p>
         </>
       )}
+      {ownerAddr ? (
+        <p className="mt-1.5 font-mono text-[11px] text-faint">
+          wallet{" "}
+          <a
+            href={explorerAddress(ownerAddr)}
+            target="_blank"
+            rel="noreferrer"
+            className="link"
+          >
+            {shortAddress(ownerAddr)}
+          </a>
+        </p>
+      ) : owner ? (
+        <p className="mt-1.5 text-[11px] text-faint">Wallet: not claimed on-chain yet</p>
+      ) : null}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {card.url && <CopyButton text={card.url} label="Copy URL" />}
         <CopyButton text={card.id} label="Copy id" />

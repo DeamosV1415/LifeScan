@@ -266,3 +266,11 @@ export function explorerTx(hash: string): string {
 export function explorerAddress(address: string): string {
   return `https://sepolia.basescan.org/address/${address}`;
 }
+
+/**
+ * Truncate an address for display — 0x1234…abcd. Always copy or link the full
+ * value; this shortened form is for the eye only.
+ */
+export function shortAddress(address: string): string {
+  return address.length > 12 ? `${address.slice(0, 6)}…${address.slice(-4)}` : address;
+}
