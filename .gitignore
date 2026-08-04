@@ -3,7 +3,6 @@ node_modules/
 out/
 dist/
 build/
-start_commands.txt
 scratchpad_pitch/
 PITCH_DECK.md
 # Secrets — never commit

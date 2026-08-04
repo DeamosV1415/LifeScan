@@ -1,0 +1,12 @@
+guards:
+pnpm --filter @lifescan/guardian start:all
+
+agent:  
+pnpm --filter @lifescan/agent start
+
+dev:
+Remove-Item -Recurse -Force apps\web\.next
+pnpm dev
+
+deck
+https://claude.ai/code/artifact/e2fcc801-4f6b-45ff-8815-107c7a027135
